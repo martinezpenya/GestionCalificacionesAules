@@ -38,6 +38,7 @@ Permite crear, actualizar fórmulas, eliminar estructuras completas y generar pl
 El script detecta automáticamente si se ejecuta como AppImage y busca datos_aules.json
 
 ## ESTRUCTURA DEL ARCHIVO JSON (datos_aules.json):
+```json
 {
   "base_url": "https://aules.edu.gva.es/docent",
   "username": "tu_usuario",
@@ -66,6 +67,7 @@ El script detecta automáticamente si se ejecuta como AppImage y busca datos_aul
     }
   ]
 }
+```
 
 ## URLs BASE SOPORTADAS:
 - https://aules.edu.gva.es/docent (entorno de pruebas)
