@@ -1,6 +1,3 @@
-# GestionCalificacionesAules
-Script para la gestión del libro de calificaciones de AULES (Moodle) de manera automatizada
-
 # Autores
 - Idea inicial: Manuel Sanchez (Nelo) me.sanchezgomis@edu.gva.es
 - Ampliación de funcionalidades, comentarios y reusabilidad: David Martinez (www.martinezpenya.es)
