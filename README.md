@@ -2,6 +2,31 @@
 - Idea inicial: Manuel Sanchez (Nelo) me.sanchezgomis@edu.gva.es
 - Ampliación de funcionalidades, comentarios y reusabilidad: David Martinez (www.martinezpenya.es)
 
+# Contenido
+
+## Código
+
+| Fichero                     | Descripción                                                  |
+| --------------------------- | ------------------------------------------------------------ |
+| `calificaciones_aules.py`   | Script en python para la gestión de libro de calificaciones en AULES (Moodle) |
+| `calificaciones_aules.sh`   | Script para la creación de un entorno virtual y ejecución del script `calificaciones_aules.py` (teniendo instalado previamente Python) en distribuciones GNU/linux. |
+| `calificaciones_aules.bat`  | Script para la creación de un entorno virtual y ejecución del script `calificaciones_aules.py` (teniendo instalado previamente Python) en sistemas operativos Windows. |
+| `requirements.txt`          | Fichero de requisitos/dependencias, usado por `calificaciones_aules.sh` y `calificaciones_aules.bat` para lanzar `calificaciones_aules.py` |
+| `empaquetar_appimage.sh`    | Script python para empaquetar el script `calificaciones_aules.py` en un AppImage en sistemas GNU/Linux. Requiere `build.sh`. |
+| `build.sh`                  | Script python para generrar el AppImage. Usado por `empaquetar_appimage.sh` |
+| `empaquetar_windows.bat`    | Archivo de proceso por lotes para empaquetar el script `calificaciones_aules.py` en un ejecutable (EXE) en sistemas Windows. |
+| `gestor-calificaciones.ico` | Logo de la aplicación para Windows.                          |
+| `gestor-calificaciones.png` | Logo de la aplicación para GNU/Linux.                        |
+
+## Releases
+
+En el apartado releases hay disponibles dos assets:
+
+| Asset                                            | Descripción                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `Gestor_Calificaciones_Aules.exe`                | Binario ejecutable para sistemas Windows.                    |
+| `Gestor_de_Calificaciones_Aules-x86_64.AppImage` | Binario ejecutable para sistemas GNU/Linux, ejecutar con `./Gestor_de_Calificaciones_Aules-x86_64.AppImage` desde la consola |
+
 # Ayuda
 
 ## DESCRIPCIÓN:
