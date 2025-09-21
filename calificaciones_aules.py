@@ -15,7 +15,6 @@ CARACTERÍSTICAS PRINCIPALES:
 - Gestión completa de categorías y elementos de calificación
 - Soporte para fórmulas de cálculo personalizadas
 - Configuración mediante archivo JSON (datos_aules.json)
-- Detección automática del entorno de ejecución (AppImage vs desarrollo)
 
 OPCIONES DEL MENÚ:
 0. Generar estructura básica JSON local
@@ -33,8 +32,6 @@ OPCIONES DEL MENÚ:
 
 4. Salir
    - Finaliza la ejecución
-
-El script detecta automáticamente si se ejecuta como AppImage y busca datos_aules.json
 
 ESTRUCTURA DEL ARCHIVO JSON (datos_aules.json):
 {
@@ -110,20 +107,15 @@ import time
 import os
 import argparse
 import sys
+import pydoc
 
-# Detectar si estamos en modo AppImage (esta línea ya debería estar)
+VERSION = "0.5"
+FECHA = "21/09/2025"
+
+# Detectar si estamos en modo AppImage
 def is_appimage():
     """Check if running as AppImage"""
     return hasattr(sys, '_MEIPASS') or 'APPIMAGE' in os.environ
-
-def get_appimage_path():
-    """Obtiene la ruta base cuando se ejecuta como AppImage"""
-    if is_appimage():
-        # Cuando es AppImage, la ruta base es donde está el ejecutable
-        return os.path.dirname(os.path.abspath(sys.argv[0]))
-    else:
-        # Cuando se ejecuta normalmente, usar el directorio del script
-        return os.path.dirname(os.path.abspath(__file__))
 
 def login(session, base_url, username, password):
     """Inicia sesión en Aules y devuelve las cookies y la clave de sesión."""
@@ -174,29 +166,6 @@ def login(session, base_url, username, password):
 
 def generar_estructura_basica():
     """Guía al usuario para generar una estructura básica de JSON"""
-    if 'APPIMAGE' in os.environ:
-        base_dir = os.path.dirname(os.environ.get('APPIMAGE'))
-
-    # Determinar el directorio de escritura
-        #DAVID
-        #base_dir = os.path.expanduser("~")
-        #base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        #base_dir = os.path.dirname(os.path.abspath(__file__))
-    # Determinar el directorio de escritura
-    elif getattr(sys, 'frozen', False):
-        # En modo AppImage, usar el directorio del ejecutable
-        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        print(f"Modo AppImage: guardando en {base_dir}")
-    else:
-        # En modo normal, usar el directorio actual
-        base_dir = os.getcwd()
-
-    print(f"{base_dir}")
-    nombre_archivo = "datos_aules_generado.json"
-    json_path = os.path.join(base_dir, nombre_archivo)
-
-
-
     print("\n" + "="*50)
     print("GENERADOR DE ESTRUCTURA BÁSICA JSON")
     print("="*50)
@@ -312,29 +281,18 @@ def generar_estructura_basica():
         "categorias_hijas": categorias_hijas
     }
 
+    # Guardar en archivo
+    nombre_archivo = "datos_aules_generado.json"
+    with open(nombre_archivo, 'w', encoding='utf-8') as f:
+        json.dump(estructura, f, indent=2, ensure_ascii=False)
 
-
-    try:
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(estructura, f, indent=2, ensure_ascii=False)
-
-        print(f"\n✓ Estructura básica guardada en '{json_path}'")
-
-    except PermissionError:
-        print(f"Error: No se puede escribir en {json_path}")
-        print("Intenta ejecutar con permisos de administrador o elige otra ubicación.")
-        return
-    except Exception as e:
-        print(f"Error al guardar el archivo: {e}")
-        return
-
+    print(f"\n✓ Estructura básica guardada en '{nombre_archivo}'")
     print("\nRECOMENDACIÓN: Edita manualmente el archivo para:")
     print("1. Completar las descripciones de los RA y CE")
     print("2. Añadir fórmulas de cálculo si es necesario (Solo CE)(usar sintaxis Moodle: =[[NOMBRE_ITEM]])")
     print("   Los identificadores que uses en las formulas deben existir previamente, sino la formula no se aplicara")
     print("3. Añadir idnumber (Solo CE) para identificar elementos de forma única")
-    print("4. Añadir aggregationcoef (Solo Categorias hijas (RA) y CE) para indicar el peso del elemento en la ponderacion")
-    print("5. Añadir más categorías hijas y elementos si es necesario")
+    print("4. Añadir más categorías hijas y elementos si es necesario")
     print("\n  EJEMPLOS:")
     print('  - "formula": "=[[1AVA]]"')
     print('  - "formula": "=([[1AVA]]*0.5)+([[FEE]]*0.5)"')
@@ -364,8 +322,6 @@ Categoría padre: {categoria_padre}
 Estructura deseada para categorías hijas:
 - Cada Resultado de Aprendizaje (RA) debe ser una categoría hija
 - Cada Criterio de Evaluación (CE) debe ser un elemento dentro de la categoría del RA correspondiente
-- Para cada elemento, incluye comentarios sobre cómo añadir fórmulas e idnumber si es necesario
-- Las fórmulas deben usar la sintaxis de Moodle con referencias como [[1AVA]], [[2AVA]], [[3AVA]], [[FEE]], etc.
 
 Por favor, genera el JSON completo con todos los RA y CE encontrados en el documento, tomando como ejemplo la estructura proporcionada en el json adjunto y extrayendo la informacion de RA y CE del documento pdf o de texto.
 """
@@ -450,17 +406,17 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
     """Obtiene todos los elementos de calificación del curso con análisis mejorado."""
     print("Obteniendo elementos del curso...")
     r = session.get(f"{base_url}/grade/edit/tree/index.php?id={course_id}")
-
+    
     if r.status_code != 200:
         print(f"Error al acceder al curso: {r.status_code}")
         return []
-
+    
     soup = BeautifulSoup(r.text, "html.parser")
     elementos = []
-
+    
     # Encontrar todas las filas de la tabla de calificaciones
     rows = soup.find_all('tr', {'class': ['category', 'item']})
-
+    
     for row in rows:
         try:
             # Determinar el tipo de elemento
@@ -468,15 +424,15 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
                 # Es una categoría
                 category_id = row.get('data-category', '')
                 parent_category_id = row.get('data-parent-category', '')
-
+                
                 if not category_id:
                     continue
-
+                
                 # Obtener el nombre de la categoría
                 name_cell = row.find('td', class_='column-name')
                 if not name_cell:
                     continue
-
+                
                 # Buscar el nombre en el elemento con clase rowtitle
                 rowtitle = name_cell.find('div', class_='rowtitle')
                 if rowtitle:
@@ -484,10 +440,10 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
                 else:
                     # Fallback: obtener texto de la celda
                     name = name_cell.get_text(strip=True)
-
+                
                 if not name:
                     continue
-
+                
                 # Obtener nivel de indentación desde la clase
                 nivel = 0
                 class_list = name_cell.get('class', [])
@@ -498,7 +454,7 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
                             break
                         except ValueError:
                             continue
-
+                
                 elementos.append({
                     "tipo": "category",
                     "id": category_id,  # Mantener ID completo (cg183428)
@@ -506,27 +462,27 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
                     "nivel": nivel,
                     "categoria_padre_id": parent_category_id if parent_category_id else ''
                 })
-
+                
             elif 'item' in row.get('class', []):
                 # Es un elemento de calificación - CORREGIDO
                 # Extraer el ID completo del item (ig1281062) del atributo id del tr
                 item_id_full = row.get('id', '')
                 if not item_id_full or not item_id_full.startswith('grade-item-ig'):
                     continue
-
+                
                 # Extraer solo la parte numérica para data-itemid
                 item_id_numeric = row.get('data-itemid', '')
                 parent_category_id = row.get('data-parent-category', '')
-
+                
                 # Obtener el nombre del item
                 name_cell = row.find('td', class_='column-name')
                 if not name_cell:
                     continue
-
+                
                 # Buscar el nombre en el elemento con clase rowtitle o gradeitemheader
                 rowtitle = name_cell.find('div', class_='rowtitle')
                 gradeitemheader = name_cell.find('span', class_='gradeitemheader')
-
+                
                 if rowtitle:
                     name = rowtitle.get_text(strip=True)
                 elif gradeitemheader:
@@ -534,13 +490,13 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
                 else:
                     # Fallback: obtener texto de la celda
                     name = name_cell.get_text(strip=True)
-
+                
                 if not name:
                     continue
-
+                
                 # Usar el ID completo del item (ig1281062)
                 item_id = item_id_full.replace('grade-item-', '')
-
+                
                 elementos.append({
                     "tipo": "item",
                     "id": item_id,  # ID completo (ig1281062)
@@ -548,11 +504,11 @@ def obtener_elementos_curso(session, cookie, base_url, course_id):
                     "nombre": name,
                     "categoria_id": parent_category_id if parent_category_id else ''
                 })
-
+                
         except Exception as e:
             print(f"Advertencia: Error al procesar fila: {e}")
             continue
-
+    
     return elementos
 
 def eliminar_elemento(session, cookie, base_url, sesskey, course_id, elemento, verificar_eliminacion):
@@ -564,19 +520,19 @@ def eliminar_elemento(session, cookie, base_url, sesskey, course_id, elemento, v
         else:  # item
             # Usar el ID completo del item (ig1281062)
             url = f"{base_url}/grade/edit/tree/index.php?id={course_id}&action=delete&confirm=1&eid={elemento['id']}&sesskey={sesskey}&gpr_type=edit&gpr_plugin=tree&gpr_courseid={course_id}"
-
+        
         print(f"Eliminando: {elemento['nombre']}")
         r = session.get(url, cookies=cookie)
-
+        
         # Si no se requiere verificación, asumimos éxito sin comprobaciones
         if not verificar_eliminacion:
             return True
-
+        
         # Verificación opcional de eliminación (solo si está activada)
         if r.status_code == 200:
             # Verificación más robusta: buscar indicadores de éxito
-            if ("itemdeleted" in r.text.lower() or
-                "categorydeleted" in r.text.lower() or
+            if ("itemdeleted" in r.text.lower() or 
+                "categorydeleted" in r.text.lower() or 
                 "success" in r.text.lower() or
                 "redirect" in r.text.lower() or
                 "location.replace" in r.text.lower()):
@@ -584,20 +540,20 @@ def eliminar_elemento(session, cookie, base_url, sesskey, course_id, elemento, v
             else:
                 # Verificar si realmente hay un error
                 error_patterns = [
-                    "cannot delete", "no se puede eliminar", "error", "exception",
+                    "cannot delete", "no se puede eliminar", "error", "exception", 
                     "problema", "no tiene permisos", "permission denied"
                 ]
                 for pattern in error_patterns:
                     if pattern in r.text.lower():
                         print(f"✗ Error real detectado al eliminar {elemento['nombre']}")
                         return False
-
+                
                 # Si no encontramos errores específicos, asumimos que fue exitoso
                 return True
         else:
             print(f"✗ Error HTTP {r.status_code} al eliminar {elemento['nombre']}")
             return False
-
+            
     except Exception as e:
         print(f"Error al eliminar elemento {elemento['nombre']}: {e}")
         return False
@@ -615,86 +571,96 @@ def encontrar_categoria_por_nombre(elementos, nombre):
 def encontrar_elementos_por_categoria(elementos, categoria_id):
     """Encuentra todos los elementos que pertenecen a una categoría."""
     elementos_relacionados = []
-
+    
     # Encontrar categorías hijas (directas)
     for elemento in elementos:
-        if (elemento["tipo"] == "category" and
+        if (elemento["tipo"] == "category" and 
             elemento.get("categoria_padre_id") == categoria_id):
             elementos_relacionados.append(elemento)
             # Buscar recursivamente elementos de esta categoría hija
             elementos_relacionados.extend(encontrar_elementos_por_categoria(elementos, elemento["id"]))
-
+    
     # Encontrar items dentro de la categoría
     for elemento in elementos:
         if elemento["tipo"] == "item" and elemento["categoria_id"] == categoria_id:
             elementos_relacionados.append(elemento)
-
+    
     return elementos_relacionados
 
-def get_categoria_payload(sesskey, course_id, name, parent_id=0, config_global=None, aggregationcoef=0.0):
-    # Configuración por defecto
+def get_categoria_payload(sesskey, course_id, name, parent_id=0, config_global=None):
     if config_global is None:
         config_global = {
-            "aggregation": 0,  # Natural por defecto
-            "aggregateonlygraded": 1,  # True por defecto
-            "grademax": 100,  # 100 por defecto
-            "gradepass": 50   # 50 por defecto
+            "aggregation": 0,
+            "aggregateonlygraded": 1,
+            "grademax": 100,
+            "gradepass": 50
         }
 
-    # Asegurar que los valores sean los correctos
     aggregation = config_global.get("aggregation", 0)
     aggregateonlygraded = 1 if config_global.get("aggregateonlygraded", True) else 0
     grademax = config_global.get("grademax", 100)
     gradepass = config_global.get("gradepass", 50)
 
-    parent = ""
-    if parent_id > 0:
-        parent = f"&parentcategory={parent_id}"
+    # limpiar el parent_id
+    parent_id_num = ""
+    if parent_id:
+        parent_id_str = str(parent_id)
+        if parent_id_str.startswith('cg'):
+            parent_id_str = parent_id_str[2:]
+        parent_id_num = parent_id_str
 
-    formdata = f"id=0&courseid={course_id}&category=-1&gpr_type=edit&gpr_plugin=tree&gpr_courseid={course_id}&sesskey={sesskey}&_qf__core_grades_form_add_category=1&fullname={name}&aggregation={aggregation}&aggregateonlygraded={aggregateonlygraded}&droplow=0&grade_item_gradetype=1&grade_item_grademax={grademax}&grade_item_grademin=0&grade_item_gradepass={gradepass}&grade_item_weightoverride=0&grade_item_aggregationcoef={aggregationcoef}{parent}"
+    parent = f"&parentcategory={parent_id_num}" if parent_id_num else ""
 
-    data = [
-        {
-            "index": 0,
-            "methodname": "core_form_dynamic_form",
-            "args": {
-                "formdata": formdata,
-                "form": "core_grades\\form\\add_category"
-            }
+    formdata = (
+        f"id=0&courseid={course_id}&category=-1&gpr_type=edit&gpr_plugin=tree&gpr_courseid={course_id}&sesskey={sesskey}"
+        f"&_qf__core_grades_form_add_category=1&fullname={name}&aggregation={aggregation}"
+        f"&aggregateonlygraded={aggregateonlygraded}&droplow=0&grade_item_gradetype=1"
+        f"&grade_item_grademax={grademax}&grade_item_grademin=0&grade_item_gradepass={gradepass}"
+        f"&grade_item_weightoverride=0{parent}"
+    )
+
+    data = [{
+        "index": 0,
+        "methodname": "core_form_dynamic_form",
+        "args": {
+            "formdata": formdata,
+            "form": "core_grades\\form\\add_category"
         }
-    ]
-
+    }]
     return json.dumps(data)
 
-def get_item_payload(sesskey, course_id, name, parent_id, config_global=None, idnumber="", aggregationcoef=1.0):
-    # Configuración por defecto para items
+
+def get_item_payload(sesskey, course_id, name, parent_id, config_global=None, idnumber=""):
     if config_global is None:
-        config_global = {
-            "grademax": 100,
-            "gradepass": 50
-        }
+        config_global = {"grademax": 100, "gradepass": 50}
 
     grademax = config_global.get("grademax", 100)
     gradepass = config_global.get("gradepass", 50)
 
-    # Incluir idnumber y aggregationcoef en el formdata si se proporciona
+    # limpiar el parent_id (cg123456 -> 123456)
+    parent_id_str = str(parent_id)
+    if parent_id_str.startswith('cg'):
+        parent_id_str = parent_id_str[2:]
+
     idnumber_field = f"&idnumber={urllib.parse.quote(idnumber)}" if idnumber else ""
-    aggregationcoef_field = f"&aggregationcoef={aggregationcoef}"
 
-    formdata = f"id=0&courseid={course_id}&itemid=-1&itemtype=manual&gpr_type=edit&gpr_plugin=tree&gpr_courseid={course_id}&sesskey={sesskey}&_qf__core_grades_form_add_item=1&itemname={name}{idnumber_field}&gradetype=1&grademax={grademax}&grademin=0.00&gradepass={gradepass}&hidden=0&locked=0&aggregationcoef={aggregationcoef}&parentcategory={parent_id}"
+    formdata = (
+        f"id=0&courseid={course_id}&itemid=-1&itemtype=manual&gpr_type=edit&gpr_plugin=tree&gpr_courseid={course_id}"
+        f"&sesskey={sesskey}&_qf__core_grades_form_add_item=1&itemname={name}{idnumber_field}"
+        f"&gradetype=1&grademax={grademax}&grademin=0.00&gradepass={gradepass}"
+        f"&hidden=0&locked=0&parentcategory={parent_id_str}"
+    )
 
-    data = [
-        {
-            "index": 0,
-            "methodname": "core_form_dynamic_form",
-            "args": {
-                "formdata": formdata,
-                "form": "core_grades\\form\\add_item"
-            }
+    data = [{
+        "index": 0,
+        "methodname": "core_form_dynamic_form",
+        "args": {
+            "formdata": formdata,
+            "form": "core_grades\\form\\add_item"
         }
-    ]
-
+    }]
     return json.dumps(data)
+
 
 def obtener_id_categoria(session, cookie, base_url, sesskey, course_id, nombre_categoria):
     """Función auxiliar para obtener el ID de una categoría por su nombre"""
@@ -708,17 +674,17 @@ def obtener_id_categoria(session, cookie, base_url, sesskey, course_id, nombre_c
             }
         }
     ]
-
+    
     url = f"{base_url}/lib/ajax/service.php?sesskey={sesskey}&info=core_form_dynamic_form"
     r = session.post(url, cookies=cookie, data=json.dumps(payload))
-
+    
     pattern = r'<option value="(\d+)"[\s\n]*>([^<]+)</option>'
     options = re.findall(pattern, r.json()[0]["data"]["html"])
-
+    
     for o in options:
         if o[1] == nombre_categoria:
             return int(o[0])
-
+    
     return 0
 
 def obtener_id_item(session, cookie, base_url, sesskey, course_id, nombre_item):
@@ -727,14 +693,14 @@ def obtener_id_item(session, cookie, base_url, sesskey, course_id, nombre_item):
         # Obtener la página de gestión de calificaciones
         url = f"{base_url}/grade/edit/tree/index.php?id={course_id}"
         r = session.get(url, cookies=cookie)
-
+        
         if r.status_code != 200:
             print(f"Error al obtener página de calificaciones: {r.status_code}")
             return None
-
+        
         soup = BeautifulSoup(r.text, "html.parser")
         trs = soup.find_all("tr")
-
+        
         for tr in trs:
             # Buscar items (elementos de calificación)
             if "class" in tr.attrs and "item" in tr.attrs["class"]:
@@ -745,7 +711,7 @@ def obtener_id_item(session, cookie, base_url, sesskey, course_id, nombre_item):
                     gradeitem_span = nombre_celda.find("span", class_="gradeitemheader")
                     if gradeitem_span:
                         item_name = gradeitem_span.get_text(strip=True)
-
+                        
                         # Comparar con el nombre que buscamos
                         if item_name == nombre_item:
                             # El ID está en el atributo data-itemid del TR
@@ -753,17 +719,23 @@ def obtener_id_item(session, cookie, base_url, sesskey, course_id, nombre_item):
                                 item_id = tr.attrs["data-itemid"]
                                 print(f"ID del item '{item_name}': {item_id}")
                                 return item_id
-
+        
         print(f"Error: No se pudo obtener el ID del item '{nombre_item}'")
         return None
-
+        
     except Exception as e:
         print(f"Error en obtener_id_item: {e}")
         return None
 
 def modificar_gradepass_item(session, cookie, base_url, sesskey, course_id, item_id, item_nombre, config_global, item_idnumber="", aggregationcoef=1.0):
-    """Modifica el campo gradepass, idnumber y aggregationcoef de un item específico"""
+    """Modifica el campo gradepass, idnumber y aggregationcoef de un item específico usando ID completo (ig######)"""
     print(f"Modificando item: {item_nombre} (ID: {item_id})")
+
+    # Extraer el ID numérico del ID completo (ig1357691 → 1357691)
+    if item_id.startswith('ig'):
+        item_id_numerico = item_id[2:]
+    else:
+        item_id_numerico = item_id
 
     # Configuración para items
     grademax = config_global.get("grademax", 10)
@@ -777,7 +749,7 @@ def modificar_gradepass_item(session, cookie, base_url, sesskey, course_id, item
     idnumber_field = f"&idnumber={idnumber_codificado}" if item_idnumber else ""
 
     formdata = (
-        f"id={item_id}&"
+        f"id={item_id_numerico}&"
         f"courseid={course_id}&"
         f"itemtype=manual&"
         f"gpr_type=edit&"
@@ -824,10 +796,16 @@ def modificar_formula_item(session, cookie, base_url, sesskey, course_id, item_i
     else:
         print(f"Modificando fórmula del item: {item_nombre} (ID: {item_id})")
         accion = "modificada"
+    
+    # Extraer ID numérico (ig1357691 → 1357691)
+    if isinstance(item_id, str) and item_id.startswith('ig'):
+        item_id_numerico = item_id[2:]
+    else:
+        item_id_numerico = item_id
 
     # Construir el payload para la solicitud POST
     formdata = (
-        f"id={item_id}&"
+        f"id={item_id_numerico}&"
         f"courseid={course_id}&"
         f"section=calculation&"
         f"gpr_type=edit&"
@@ -840,27 +818,63 @@ def modificar_formula_item(session, cookie, base_url, sesskey, course_id, item_i
         f"submitbutton=Guarda+els+canvis"
     )
 
-    # Enviar la solicitud POST al formulario de cálculo
     url = f"{base_url}/grade/edit/tree/calculation.php"
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
     }
 
     r = session.post(url, cookies=cookie, data=formdata, headers=headers)
+    print(f"Fórmula del item '{item_nombre}' {accion} correctamente: {formula}")
+    return True
 
-    if r.status_code == 200:
-        if formula == "":
-            print(f"Fórmula del item '{item_nombre}' eliminada correctamente")
-        else:
-            print(f"Fórmula del item '{item_nombre}' {accion} correctamente: {formula}")
-        return True
+def modificar_formula_categoria(session, cookie, base_url, sesskey, course_id, categoria_id, categoria_nombre, formula):
+    """Modifica la fórmula de cálculo de una categoría específica"""
+    if formula == "":
+        print(f"Eliminando fórmula de la categoría: {categoria_nombre} (ID: {categoria_id})")
+        accion = "eliminada"
     else:
-        print(f"Error al {accion} la fórmula del item '{item_nombre}': {r.status_code}")
-        return False
+        print(f"Modificando fórmula de la categoría: {categoria_nombre} (ID: {categoria_id})")
+        accion = "modificada"
+    
+    # Extraer ID numérico si es necesario (gc1357938 → 1357938)
+    if isinstance(categoria_id, str) and categoria_id.startswith('gc'):
+        categoria_id_numerico = categoria_id[2:]
+    else:
+        categoria_id_numerico = categoria_id
+
+    # Construir el payload para la solicitud POST
+    formdata = (
+        f"id={categoria_id_numerico}&"
+        f"courseid={course_id}&"
+        f"section=calculation&"
+        f"gpr_type=edit&"
+        f"gpr_plugin=tree&"
+        f"gpr_courseid={course_id}&"
+        f"sesskey={sesskey}&"
+        f"_qf__edit_calculation_form=1&"
+        f"mform_isexpanded_id_general=1&"
+        f"calculation={urllib.parse.quote(formula)}&"
+        f"submitbutton=Guarda+els+canvis"
+    )
+
+    url = f"{base_url}/grade/edit/tree/calculation.php"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+
+    r = session.post(url, cookies=cookie, data=formdata, headers=headers)
+    print(f"Fórmula de la categoría '{categoria_nombre}' {accion} correctamente: {formula}")
+    return True
 
 def modificar_gradepass_categoria(session, cookie, base_url, sesskey, course_id, categoria_id, categoria_nombre, config_global, aggregationcoef=0.0):
-    """Modifica el campo gradepass y aggregationcoef de una categoría específica"""
+    """Modifica el campo gradepass y aggregationcoef de una categoría específica usando ID completo (cg######)"""
     print(f"Modificando categoría: {categoria_nombre} (ID: {categoria_id})")
+
+    # Extraer el ID numérico del ID completo (cg192460 → 192460)
+    if categoria_id.startswith('cg'):
+        categoria_id_numerico = categoria_id[2:]
+    else:
+        categoria_id_numerico = categoria_id
 
     # Construir el payload basado en el formulario de edición
     aggregation = config_global.get("aggregation", 0)
@@ -874,7 +888,7 @@ def modificar_gradepass_categoria(session, cookie, base_url, sesskey, course_id,
     formdata = (
         f"mform_isexpanded_id_general=1&"
         f"mform_isexpanded_id_headerparent=1&"
-        f"id={categoria_id}&"
+        f"id={categoria_id_numerico}&"
         f"courseid={course_id}&"
         f"gpr_type=edit&"
         f"gpr_plugin=tree&"
@@ -915,186 +929,388 @@ def modificar_gradepass_categoria(session, cookie, base_url, sesskey, course_id,
         print(f"Error al modificar la categoría '{categoria_nombre}': {r.status_code}")
         return False
 
-def crear_categoria(session, cookie, base_url, sesskey, course_id, nombre, parent_id=0, config_global=None, aggregationcoef=0.0):
-    """Crea una categoría en el libro de calificaciones."""
-    print(f"Creando categoría: {nombre}")
-
+def insertar_categorias_y_items(session, cookie, base_url, sesskey, course_id, categoria_padre, categorias_hijas, config_global=None):
     # Configuración por defecto
     if config_global is None:
         config_global = {
-            "aggregation": 0,  # Natural por defecto
-            "aggregateonlygraded": 1,  # True por defecto
-            "grademax": 100,  # 100 por defecto
-            "gradepass": 50   # 50 por defecto
-        }
-
-    # Asegurar que los valores sean los correctos
-    aggregation = config_global.get("aggregation", 0)
-    aggregateonlygraded = 1 if config_global.get("aggregateonlygraded", True) else 0
-    grademax = config_global.get("grademax", 100)
-    gradepass = config_global.get("gradepass", 50)
-
-    # Construir el payload para la solicitud POST
-    formdata = (
-        f"id=0&"
-        f"courseid={course_id}&"
-        f"category=-1&"
-        f"gpr_type=edit&"
-        f"gpr_plugin=tree&"
-        f"gpr_courseid={course_id}&"
-        f"sesskey={sesskey}&"
-        f"_qf__core_grades_form_add_category=1&"
-        f"fullname={urllib.parse.quote(nombre)}&"
-        f"aggregation={aggregation}&"
-        f"aggregateonlygraded={aggregateonlygraded}&"
-        f"droplow=0&"
-        f"grade_item_gradetype=1&"
-        f"grade_item_grademax={grademax}&"
-        f"grade_item_grademin=0&"
-        f"grade_item_gradepass={gradepass}&"
-        f"grade_item_weightoverride=0&"
-        f"grade_item_aggregationcoef={aggregationcoef}&"  # ← Campo aggregationcoef añadido
-        f"submitbutton=Guarda+els+canvis"
-    )
-
-    # Incluir parent_id si es diferente de 0 (categoría raíz)
-    if parent_id > 0:
-        formdata += f"&parentcategory={parent_id}"
-
-    # Enviar la solicitud POST al formulario de creación de categoría
-    url = f"{base_url}/grade/edit/tree/category.php"
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-
-    r = session.post(url, cookies=cookie, data=formdata, headers=headers)
-
-    if r.status_code == 200:
-        print(f"Categoría '{nombre}' creada correctamente")
-        return True
-    else:
-        print(f"Error al crear la categoría '{nombre}': {r.status_code}")
-        return False
-
-def crear_item(session, cookie, base_url, sesskey, course_id, nombre, parent_id, config_global=None, idnumber="", aggregationcoef=1.0):
-    """Crea un item en el libro de calificaciones."""
-    print(f"Creando item: {nombre}")
-
-    # Configuración por defecto para items
-    if config_global is None:
-        config_global = {
+            "aggregation": 0,
+            "aggregateonlygraded": 1,
             "grademax": 100,
             "gradepass": 50
         }
 
-    grademax = config_global.get("grademax", 100)
+    # Obtener gradepass de la configuración global
     gradepass = config_global.get("gradepass", 50)
 
-    # Construir el payload para la solicitud POST
-    formdata = (
-        f"id=0&"
-        f"courseid={course_id}&"
-        f"itemid=-1&"
-        f"itemtype=manual&"
-        f"gpr_type=edit&"
-        f"gpr_plugin=tree&"
-        f"gpr_courseid={course_id}&"
-        f"sesskey={sesskey}&"
-        f"_qf__core_grades_form_add_item=1&"
-        f"itemname={urllib.parse.quote(nombre)}&"
-        f"gradetype=1&"
-        f"grademax={grademax}&"
-        f"grademin=0.00&"
-        f"gradepass={gradepass}&"
-        f"hidden=0&"
-        f"locked=0&"
-        f"aggregationcoef={aggregationcoef}&"  # ← Campo aggregationcoef añadido
-        f"submitbutton=Guarda+els+canvis"
+    # Primero insertar la categoría padre
+    print(f"Insertando categoría padre: {categoria_padre}")
+
+    payload = get_categoria_payload(sesskey, course_id, categoria_padre, config_global=config_global)
+    url = f"{base_url}/lib/ajax/service.php?sesskey={sesskey}&info=core_form_dynamic_form"
+    r = session.post(url, cookies=cookie, data=payload)
+
+    # Obtener el ID de la categoría padre (cg######)
+    padre_id = obtener_id_categoria_completo(session, cookie, base_url, sesskey, course_id, categoria_padre)
+
+    if not padre_id or not padre_id.startswith('cg'):
+        print(f"Error: No se pudo obtener el ID completo de la categoría padre '{categoria_padre}'")
+        return
+
+    print(f"Categoría padre '{categoria_padre}' insertada con ID: {padre_id}")
+    
+    # Modificar gradepass de la categoría padre
+    modificar_gradepass_categoria(
+        session, cookie, base_url, sesskey, course_id,
+        padre_id, categoria_padre, config_global
     )
 
-    # Incluir idnumber si se proporciona
-    if idnumber:
-        formdata += f"&idnumber={urllib.parse.quote(idnumber)}"
+    # Luego insertar las categorías hijas y sus elementos
+    for categoria_hija in tqdm(categorias_hijas, desc="Insertando categorías hijas"):
+        nombre_categoria_hija = categoria_hija["nombre"]
+        elementos = categoria_hija["elementos"]
+        aggregationcoef_categoria = categoria_hija.get("aggregationcoef", 0.0)
 
-    # Incluir parent_id (obligatorio para items)
-    formdata += f"&parentcategory={parent_id}"
+        print(f"Insertando categoría hija: {nombre_categoria_hija}")
 
-    # Enviar la solicitud POST al formulario de creación de item
-    url = f"{base_url}/grade/edit/tree/item.php"
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
+        # Insertar la categoría hija
+        payload = get_categoria_payload(sesskey, course_id, nombre_categoria_hija, padre_id, config_global)
+        url = f"{base_url}/lib/ajax/service.php?sesskey={sesskey}&info=core_form_dynamic_form"
+        r = session.post(url, cookies=cookie, data=payload)
 
-    r = session.post(url, cookies=cookie, data=formdata, headers=headers)
+        # Obtener el ID completo de la categoría hija (cg######)
+        hija_id = obtener_id_categoria_completo(session, cookie, base_url, sesskey, course_id, nombre_categoria_hija)
 
-    if r.status_code == 200:
-        print(f"Item '{nombre}' creado correctamente")
-        return True
-    else:
-        print(f"Error al crear el item '{nombre}': {r.status_code}")
-        return False
-
-def crear_estructura_calificaciones(session, cookie, base_url, sesskey, course_id, categoria_padre, categorias_hijas, config_global):
-    """Crea la estructura completa de calificaciones basada en el JSON."""
-    print("Creando estructura de calificaciones...")
-
-    # Primero crear la categoría padre
-    if not crear_categoria(session, cookie, base_url, sesskey, course_id, categoria_padre, 0, config_global):
-        print("Error: No se pudo crear la categoría padre")
-        return False
-
-    # Obtener el ID de la categoría padre recién creada
-    parent_id = obtener_id_categoria(session, cookie, base_url, sesskey, course_id, categoria_padre)
-    if parent_id == 0:
-        print("Error: No se pudo obtener el ID de la categoría padre")
-        return False
-
-    # Crear cada categoría hija y sus elementos
-    for categoria_hija in categorias_hijas:
-        nombre_categoria = categoria_hija["nombre"]
-
-        # Crear la categoría hija
-        if not crear_categoria(session, cookie, base_url, sesskey, course_id, nombre_categoria, parent_id, config_global):
-            print(f"Error: No se pudo crear la categoría hija '{nombre_categoria}'")
+        if not hija_id or not hija_id.startswith('cg'):
+            print(f"Error: No se pudo obtener el ID completo de la categoría hija '{nombre_categoria_hija}'")
             continue
 
-        # Obtener el ID de la categoría hija recién creada
-        categoria_id = obtener_id_categoria(session, cookie, base_url, sesskey, course_id, nombre_categoria)
-        if categoria_id == 0:
-            print(f"Error: No se pudo obtener el ID de la categoría hija '{nombre_categoria}'")
-            continue
+        print(f"Categoría hija '{nombre_categoria_hija}' insertada con ID: {hija_id}")
 
-        # Crear los elementos dentro de esta categoría
-        for elemento in categoria_hija.get("elementos", []):
-            nombre_elemento = elemento["nombre"]
-            idnumber = elemento.get("idnumber", "")
-            formula = elemento.get("formula", "")
-            aggregationcoef = elemento.get("aggregationcoef", 1.0)
+        # Modificar gradepass y aggregationcoef de la categoría hija
+        modificar_gradepass_categoria(
+            session, cookie, base_url, sesskey, course_id,
+            hija_id, nombre_categoria_hija, config_global, aggregationcoef_categoria
+        )
 
-            # Crear el item
-            if not crear_item(session, cookie, base_url, sesskey, course_id, nombre_elemento, categoria_id, config_global, idnumber, aggregationcoef):
-                print(f"Error: No se pudo crear el item '{nombre_elemento}'")
-                continue
+        # Insertar los elementos de calificación en la categoría hija
+        for elemento_info in tqdm(elementos, desc=f"Insertando elementos en {nombre_categoria_hija}"):
+            # Determinar si el elemento es un string (nombre simple) o un diccionario (con nombre, fórmula e idnumber)
+            if isinstance(elemento_info, dict):
+                elemento_nombre = elemento_info["nombre"]
+                elemento_formula = elemento_info.get("formula", None)
+                elemento_idnumber = elemento_info.get("idnumber", "")
+                elemento_aggregationcoef = elemento_info.get("aggregationcoef", 1.0)
+            else:
+                elemento_nombre = elemento_info
+                elemento_formula = None
+                elemento_idnumber = ""
+                elemento_aggregationcoef = 1.0
 
-            # Si hay una fórmula, aplicarla al item
-            if formula:
-                # Obtener el ID del item recién creado
-                item_id = obtener_id_item(session, cookie, base_url, sesskey, course_id, nombre_elemento)
-                if item_id:
-                    if not modificar_formula_item(session, cookie, base_url, sesskey, course_id, item_id, nombre_elemento, formula):
-                        print(f"Error: No se pudo aplicar la fórmula al item '{nombre_elemento}'")
+            # Pasar el idnumber a get_item_payload
+            payload = get_item_payload(sesskey, course_id, elemento_nombre, hija_id, config_global, elemento_idnumber)
+            url = f"{base_url}/lib/ajax/service.php?sesskey={sesskey}&info=core_form_dynamic_form"
+            r = session.post(url, cookies=cookie, data=payload)
+
+            # Verificar si la inserción fue exitosa
+            if r.status_code == 200 and r.json()[0]["error"] == False:
+                print(f"Elemento de calificación '{elemento_nombre}' insertado correctamente")
+
+                # Esperar un momento para que el servidor procese la creación
+                time.sleep(1)
+
+                # Obtener el ID completo del item recién creado (ig######)
+                item_id = obtener_id_item_completo(session, cookie, base_url, sesskey, course_id, elemento_nombre)
+
+                if item_id and item_id.startswith('ig'):
+                    # Modificar el gradepass, idnumber y aggregationcoef del item recién creado
+                    modificar_gradepass_item(
+                        session, cookie, base_url, sesskey, course_id,
+                        item_id, elemento_nombre, config_global, 
+                        elemento_idnumber, elemento_aggregationcoef
+                    )
+
+                    # Si hay una fórmula definida, aplicarla
+                    if elemento_formula:
+                        modificar_formula_item(
+                            session, cookie, base_url, sesskey, course_id,
+                            item_id, elemento_nombre, elemento_formula
+                        )
                 else:
-                    print(f"Error: No se pudo obtener el ID del item '{nombre_elemento}' para aplicar la fórmula")
+                    print(f"Error: No se pudo obtener el ID completo del item '{elemento_nombre}'")
+            else:
+                print(f"Error al insertar el elemento de calificación '{elemento_nombre}': {r.text}")
 
-    print("Estructura de calificaciones creada correctamente")
-    return True
+def obtener_id_categoria_completo(session, cookie, base_url, sesskey, course_id, nombre_categoria):
+    """Obtiene el ID completo (cg######) de una categoría por su nombre"""
+    try:
+        # Obtener la página de gestión de calificaciones
+        url = f"{base_url}/grade/edit/tree/index.php?id={course_id}"
+        r = session.get(url, cookies=cookie)
+        
+        if r.status_code != 200:
+            print(f"Error al obtener página de calificaciones: {r.status_code}")
+            return None
+        
+        soup = BeautifulSoup(r.text, "html.parser")
+        
+        # Buscar todas las categorías
+        categorias = soup.find_all("tr", class_="category")
+        
+        for categoria in categorias:
+            # Extraer el nombre de la categoría
+            nombre_celda = categoria.find("td", class_="column-name")
+            if nombre_celda:
+                # Buscar el div con la clase rowtitle que contiene el nombre real
+                rowtitle = nombre_celda.find("div", class_="rowtitle")
+                if rowtitle:
+                    categoria_name = rowtitle.get_text(strip=True)
+                    
+                    # Comparar con el nombre que buscamos
+                    if categoria_name == nombre_categoria:
+                        # El ID completo está en el atributo id del TR (grade-item-cg######)
+                        if "id" in categoria.attrs:
+                            categoria_id = categoria.attrs["id"].replace("grade-item-", "")
+                            print(f"ID completo de la categoría '{categoria_name}': {categoria_id}")
+                            return categoria_id
+        
+        print(f"Error: No se pudo obtener el ID completo de la categoría '{nombre_categoria}'")
+        return None
+        
+    except Exception as e:
+        print(f"Error en obtener_id_categoria_completo: {e}")
+        return None
+
+def obtener_id_item_completo(session, cookie, base_url, sesskey, course_id, nombre_item):
+    """Obtiene el ID completo (ig######) de un item por su nombre"""
+    try:
+        # Obtener la página de gestión de calificaciones
+        url = f"{base_url}/grade/edit/tree/index.php?id={course_id}"
+        r = session.get(url, cookies=cookie)
+        
+        if r.status_code != 200:
+            print(f"Error al obtener página de calificaciones: {r.status_code}")
+            return None
+        
+        soup = BeautifulSoup(r.text, "html.parser")
+        
+        # Buscar todos los items (elementos de calificación)
+        items = soup.find_all("tr", class_="item")
+        
+        for item in items:
+            # Extraer el nombre del item
+            nombre_celda = item.find("td", class_="column-name")
+            if nombre_celda:
+                # Buscar el span con la clase gradeitemheader que contiene el nombre real
+                gradeitem_span = nombre_celda.find("span", class_="gradeitemheader")
+                if gradeitem_span:
+                    item_name = gradeitem_span.get_text(strip=True)
+                    
+                    # Comparar con el nombre que buscamos
+                    if item_name == nombre_item:
+                        # El ID completo está en el atributo id del TR (grade-item-ig######)
+                        if "id" in item.attrs:
+                            item_id = item.attrs["id"].replace("grade-item-", "")
+                            print(f"ID completo del item '{item_name}': {item_id}")
+                            return item_id
+        
+        print(f"Error: No se pudo obtener el ID completo del item '{nombre_item}'")
+        return None
+        
+    except Exception as e:
+        print(f"Error en obtener_id_item_completo: {e}")
+        return None
+def actualizar_formulas(session, cookie, base_url, sesskey, course_id, categorias_hijas):
+    """Actualiza o elimina las fórmulas de cálculo de los elementos existentes"""
+    print("Iniciando actualización/eliminación de fórmulas...")
+    
+    # Contadores para estadísticas
+    total_elementos = 0
+    elementos_con_formula = 0
+    elementos_actualizados = 0
+    elementos_eliminados = 0
+    elementos_no_encontrados = 0
+    
+    # Recorrer todas las categorías hijas y sus elementos
+    for categoria_hija in tqdm(categorias_hijas, desc="Procesando categorías"):
+        nombre_categoria = categoria_hija["nombre"]
+        elementos = categoria_hija["elementos"]
+        
+        print(f"\nProcesando categoría: {nombre_categoria}")
+        
+        # Procesar cada elemento de la categoría
+        for elemento_info in elementos:
+            # Determinar si el elemento es un string (nombre simple) o un diccionario (con nombre y fórmula)
+            if isinstance(elemento_info, dict):
+                elemento_nombre = elemento_info["nombre"]
+                elemento_formula = elemento_info.get("formula", None)
+            else:
+                elemento_nombre = elemento_info
+                elemento_formula = None
+            
+            total_elementos += 1
+            
+            # Si el elemento tiene fórmula definida (puede ser cadena vacía para eliminar), procesarlo
+            if elemento_formula is not None:
+                elementos_con_formula += 1
+                print(f"Buscando elemento: {elemento_nombre}")
+                
+                # Obtener el ID del item
+                item_id = obtener_id_item(session, cookie, base_url, sesskey, course_id, elemento_nombre)
+                
+                if item_id:
+                    # Modificar o eliminar la fórmula del item
+                    if modificar_formula_item(session, cookie, base_url, sesskey, course_id, item_id, elemento_nombre, elemento_formula):
+                        if elemento_formula == "":
+                            elementos_eliminados += 1
+                        else:
+                            elementos_actualizados += 1
+                    # Pequeña pausa para no saturar el servidor
+                    time.sleep(0.5)
+                else:
+                    elementos_no_encontrados += 1
+                    print(f"Elemento no encontrado: {elemento_nombre}")
+    
+    # Mostrar resumen de la operación
+    print("\n" + "="*50)
+    print("RESUMEN DE LA ACTUALIZACIÓN/ELIMINACIÓN")
+    print("="*50)
+    print(f"Total de elementos procesados: {total_elementos}")
+    print(f"Elementos con fórmula definida: {elementos_con_formula}")
+    print(f"Elementos actualizados correctamente: {elementos_actualizados}")
+    print(f"Elementos con fórmula eliminada: {elementos_eliminados}")
+    print(f"Elementos no encontrados: {elementos_no_encontrados}")
+    print("="*50)
+
+def eliminar_estructura(session, cookie, base_url, sesskey, course_id, nombre_categoria_padre):
+    """Elimina una estructura completa a partir de una categoría padre"""
+    print(f"Buscando categoría padre: {nombre_categoria_padre}")
+    
+    # Obtener todos los elementos del curso
+    elementos = obtener_elementos_curso(session, cookie, base_url, course_id)
+    
+    if not elementos:
+        print("No se encontraron elementos en el curso o no se pudo acceder a él.")
+        return
+    
+    print(f"Se encontraron {len(elementos)} elementos en el curso")
+    
+    # Encontrar la categoría padre
+    categoria_padre = encontrar_categoria_por_nombre(elementos, nombre_categoria_padre)
+    if not categoria_padre:
+        print(f"Advertencia: No se encontró la categoría '{nombre_categoria_padre}'")
+        # Mostrar categorías disponibles para ayudar con la depuración
+        categorias_disponibles = [e["nombre"] for e in elementos if e["tipo"] == "category"]
+        print("Categorías disponibles:")
+        for cat in categorias_disponibles:
+            print(f"  - {cat}")
+        return
+        
+    print(f"Encontrada categoría: {categoria_padre['nombre']} (ID: {categoria_padre['id']}, Nivel: {categoria_padre['nivel']})")
+    
+    # Encontrar todos los elementos relacionados con esta categoría
+    elementos_relacionados = encontrar_elementos_por_categoria(elementos, categoria_padre["id"])
+    print(f"Encontrados {len(elementos_relacionados)} elementos relacionados con {categoria_padre['nombre']}")
+    
+    elementos_a_eliminar = elementos_relacionados
+    elementos_a_eliminar.append(categoria_padre)
+    
+    # Eliminar duplicados
+    elementos_unicos = []
+    ids_vistos = set()
+    for elemento in elementos_a_eliminar:
+        elemento_id = f"{elemento['tipo']}_{elemento['id']}"
+        if elemento_id not in ids_vistos:
+            elementos_unicos.append(elemento)
+            ids_vistos.add(elemento_id)
+    
+    elementos_a_eliminar = elementos_unicos
+    
+    print(f"Elementos encontrados para eliminar: {len(elementos_a_eliminar)}")
+    
+    # Separar items y categorías
+    items = [e for e in elementos_a_eliminar if e["tipo"] == "item"]
+    categorias = [e for e in elementos_a_eliminar if e["tipo"] == "category"]
+    
+    print(f"  - Items: {len(items)}")
+    print(f"  - Categorías: {len(categorias)}")
+    
+    # Mostrar lo que se va a eliminar para confirmación
+    print("\nElementos a eliminar:")
+    for categoria in categorias:
+        print(f"  - Categoría: {categoria['nombre']} (nivel: {categoria['nivel']}, ID: {categoria['id']})")
+    for item in items:
+        print(f"  - Item: {item['nombre']} (ID: {item['id']})")
+    
+    # Confirmar antes de eliminar
+    confirmacion = input("\n¿Estás seguro de que quieres eliminar estos elementos? (s/n): ")
+    if confirmacion.lower() != 's':
+        print("Operación cancelada.")
+        return
+    
+    # Configuración de verificación (por defecto True)
+    verificar_eliminacion = True
+    
+    # Progreso general - primero items, luego categorías (de más específicas a más generales)
+    # Ordenar categorías por nivel descendente (las más profundas primero)
+    categorias_ordenadas = sorted(categorias, key=lambda x: x.get("nivel", 0), reverse=True)
+    
+    print("\nIniciando eliminación...")
+    
+    with tqdm(total=len(elementos_a_eliminar), desc="Eliminando elementos") as pbar:
+        # Primero eliminar todos los items
+        for item in items:
+            if eliminar_elemento(session, cookie, base_url, sesskey, course_id, item, verificar_eliminacion):
+                print(f"✓ Eliminado elemento: {item['nombre']}")
+            else:
+                print(f"✗ Error al eliminar elemento: {item['nombre']}")
+            pbar.update(1)
+        
+        # Luego eliminar categorías (de más profundas a más superficiales)
+        for categoria in categorias_ordenadas:
+            if eliminar_elemento(session, cookie, base_url, sesskey, course_id, categoria, verificar_eliminacion):
+                print(f"✓ Eliminada categoría: {categoria['nombre']}")
+            else:
+                print(f"✗ Error al eliminar categoría: {categoria['nombre']}")
+            pbar.update(1)
+    
+    print("Proceso de eliminación completado.")
+
+def mostrar_menu(args=None):
+    """Muestra el menú principal y obtiene la selección del usuario"""
+    if args and args.mode:
+        # Usar modo desde argumentos de línea de comandos
+        mode_mapping = {
+            'generate': '0',
+            'create': '1',
+            'update': '2',
+            'delete': '3'
+        }
+        return mode_mapping.get(args.mode, '4')
+
+    print("\n" + "="*70)
+    print(f"GESTIÓN DE ESTRUCTURAS DE CALIFICACIÓN EN MOODLE  v{VERSION}  ({FECHA})")
+    print("="*70)
+    print("0. Generar estructura básica JSON local")
+    print("1. Crear nueva estructura online con el json datos_aules.json")
+    print("2. Actualizar cálculos y pesos en estructura existente online")
+    print("3. Eliminar estructura")
+    print("4. Ayuda/Creditos")
+    print("5. Salir")
+    print("="*70)
+
+    while True:
+        opcion = input("Selecciona una opción (0-5): ")
+        if opcion in ["0", "1", "2", "3", "4", "5"]:
+            return opcion
+        print("Opción no válida. Por favor, selecciona 0, 1, 2, 3, 4 o 5.")
 
 def mostrar_ayuda_creditos():
-    """Muestra la información de ayuda y créditos del script"""
-    print("\n" + "="*80)
-    print("Script de Gestión de Calificaciones para Aules (Moodle)")
-    print("="*80)
-    print("""
+    """Muestra la información de ayuda y créditos del script con paginador"""
+    texto = """
+================================================================================
+Script de Gestión de Calificaciones para Aules (Moodle)
+================================================================================
+
 Autores:
 - Idea inicial: Manuel Sanchez (Nelo) me.sanchezgomis@edu.gva.es
 - Ampliación de funcionalidades, comentarios y reusabilidad: David Martinez (www.martinezpenya.es)
@@ -1194,78 +1410,89 @@ FLUJO DE TRABAJO RECOMENDADO:
 
 SOPORTE PARA IA GENERATIVA:
 Incluye prompt específico para crear JSON completos a partir de documentos con RA y CE.
-""")
+================================================================================
+"""
+    # Mostrar texto con paginador
+    pydoc.pager(texto)
     input("\nPresiona Enter para volver al menú principal...")
 
 def main():
-    parser = argparse.ArgumentParser(description='Herramienta para gestionar calificaciones en Aules')
-    parser.add_argument('--debug', action='store_true', help='Mostrar información de depuración')
-    args = parser.parse_args()
+    """Función principal del script."""
+    session = requests.session()
 
-    if args.debug:
-        print("=== MODO DEBUG ===")
-        print(f"Directorio actual: {os.getcwd()}")
-        print(f"Directorio del script: {os.path.dirname(os.path.abspath(__file__))}")
-        print(f"Es AppImage: {is_appimage()}")
-        print(f"Archivos en directorio actual: {os.listdir('.')}")
-        print("==================")
+    if is_appimage():
+        print("=== GESTOR DE CALIFICACIONES AULES ===")
+        print("Ejecutando en modo AppImage")
+        input("Presiona Enter para continuar...")
 
     while True:
-        print("\n" + "="*55)
-        print("GESTOR DE ESTRUCTURA DE CALIFICACIONES AULES v.0.4")
-        print("="*55)
-        print("0. Generar estructura básica JSON local")
-        print("1. Crear nueva estructura online con el json datos_aules.json")
-        print("2. Actualizar cálculos y pesos en estructura existente online")
-        print("3. Eliminar estructura online")
-        print("4. Ayuda / Creditos")
-        print("5. Salir")
-        print("="*55)
-
-        opcion = input("Selecciona una opción: ")
+        # Mostrar menú siempre
+        opcion = mostrar_menu()
 
         if opcion == "0":
+            # Generar estructura básica JSON
             generar_estructura_basica()
+            continue
 
-        elif opcion == "1":
-            print("\nCargando configuración desde JSON...")
+        elif opcion == "4":
+            # Ayuda / Créditos
+            mostrar_ayuda_creditos()
+            continue
+
+        elif opcion == "5":
+            # Salir
+            print("Saliendo del programa...")
+            break
+
+        # Para opciones 1, 2 y 3 necesitamos datos_aules.json
+        try:
             data = cargar_datos_json()
             if not data:
                 input("Presiona Enter para continuar...")
                 continue
+        except Exception as e:
+            print(f"Error al cargar datos_aules.json: {e}")
+            input("Presiona Enter para continuar...")
+            continue
 
-            print("✓ Configuración cargada correctamente")
+        base_url = data["base_url"]
+        username = data["username"]
+        password = data["password"]
+        course_id = data["course_id"]
+        categoria_padre = data["categoria_padre"]
+        categorias_hijas = data["categorias_hijas"]
+        config_global = data["configuracion_global"]
 
-            # Iniciar sesión
-            session = requests.Session()
-            cookie, sesskey = login(session, data["base_url"], data["username"], data["password"])
+        if opcion == "1":
+            # Crear nueva estructura online
+            cookie, sesskey = login(session, base_url, username, password)
+            if not sesskey:
+                print("Error en el login. Reintentando...")
+                session = requests.session()  # Reiniciamos la sesión
+                cookie, sesskey = login(session, base_url, username, password)
+                if not sesskey:
+                    print("Error crítico en el login. Abortando.")
+                    break
 
-            if not cookie or not sesskey:
-                print("Error: No se pudo iniciar sesión")
-                input("Presiona Enter para continuar...")
-                continue
+            print(f"Usando curso con ID: {course_id}")
+            print(f"Categoría padre: {categoria_padre}")
+            print(f"Categorías hijas a crear: {len(categorias_hijas)}")
 
-            # Crear estructura
-            crear_estructura_calificaciones(
-                session, cookie, data["base_url"], sesskey,
-                data["course_id"], data["categoria_padre"],
-                data["categorias_hijas"], data["configuracion_global"]
-            )
+            total_elementos = sum(len(categoria["elementos"]) for categoria in categorias_hijas)
+            print(f"Elementos de calificación a crear: {total_elementos}")
 
+            insertar_categorias_y_items(session, cookie, base_url, sesskey, course_id, categoria_padre, categorias_hijas, config_global)
+            print("Proceso de creación completado.")
             input("Presiona Enter para continuar...")
 
         elif opcion == "2":
+            # Actualizar cálculos y pesos en estructura existente online
             print("\nCargando configuración desde JSON...")
-            data = cargar_datos_json()
-            if not data:
-                input("Presiona Enter para continuar...")
-                continue
-
             print("✓ Configuración cargada correctamente")
 
             # Iniciar sesión
             session = requests.Session()
-            cookie, sesskey = login(session, data["base_url"], data["username"], data["password"])
+            cookie, sesskey = login(session, base_url, username, password)
 
             if not cookie or not sesskey:
                 print("Error: No se pudo iniciar sesión")
@@ -1273,7 +1500,7 @@ def main():
                 continue
 
             # Obtener elementos del curso
-            elementos = obtener_elementos_curso(session, cookie, data["base_url"], data["course_id"])
+            elementos = obtener_elementos_curso(session, cookie, base_url, course_id)
 
             if not elementos:
                 print("No se encontraron elementos en el curso")
@@ -1281,91 +1508,15 @@ def main():
                 continue
 
             # Encontrar la categoría padre
-            categoria_padre = encontrar_categoria_por_nombre(elementos, data["categoria_padre"])
+            categoria_padre_elem = encontrar_categoria_por_nombre(elementos, categoria_padre)
 
-            if not categoria_padre:
-                print(f"No se encontró la categoría padre: {data['categoria_padre']}")
+            if not categoria_padre_elem:
+                print(f"No se encontró la categoría padre: {categoria_padre}")
                 input("Presiona Enter para continuar...")
                 continue
 
             # Encontrar todos los elementos relacionados
-            elementos_a_eliminar = encontrar_elementos_por_categoria(elementos, categoria_padre["id"])
-
-            if not elementos_a_eliminar:
-                print("No se encontraron elementos relacionados con la categoría padre")
-                input("Presiona Enter para continuar...")
-                continue
-
-            print(f"\nSe van a eliminar {len(elementos_a_eliminar)} elementos:")
-            for elemento in elementos_a_eliminar:
-                print(f"  - {elemento['nombre']} ({elemento['tipo']})")
-
-            confirmacion = input("\n¿Estás seguro de que quieres eliminar estos elementos? (s/n): ")
-            if confirmacion.lower() != 's':
-                print("Operación cancelada")
-                input("Presiona Enter para continuar...")
-                continue
-
-            # Preguntar si se desea verificación de eliminación
-            verificar_eliminacion = input("¿Verificar eliminación de cada elemento? (s/n, n=recomendado): ").lower() != 's'
-
-            # Eliminar elementos (primero los items, luego las categorías)
-            elementos_eliminados = 0
-
-            # Primero eliminar items
-            for elemento in elementos_a_eliminar:
-                if elemento["tipo"] == "item":
-                    if eliminar_elemento(session, cookie, data["base_url"], sesskey, data["course_id"], elemento, verificar_eliminacion):
-                        elementos_eliminados += 1
-
-            # Luego eliminar categorías (en orden inverso para evitar problemas de dependencia)
-            categorias_a_eliminar = [e for e in elementos_a_eliminar if e["tipo"] == "category"]
-            # Ordenar por nivel descendente (eliminar primero las más profundas)
-            categorias_a_eliminar.sort(key=lambda x: x.get("nivel", 0), reverse=True)
-
-            for categoria in categorias_a_eliminar:
-                if eliminar_elemento(session, cookie, data["base_url"], sesskey, data["course_id"], categoria, verificar_eliminacion):
-                    elementos_eliminados += 1
-
-            print(f"\nSe eliminaron {elementos_eliminados} de {len(elementos_a_eliminar)} elementos")
-            input("Presiona Enter para continuar...")
-
-        elif opcion == "3":
-            print("\nCargando configuración desde JSON...")
-            data = cargar_datos_json()
-            if not data:
-                input("Presiona Enter para continuar...")
-                continue
-
-            print("✓ Configuración cargada correctamente")
-
-            # Iniciar sesión
-            session = requests.Session()
-            cookie, sesskey = login(session, data["base_url"], data["username"], data["password"])
-
-            if not cookie or not sesskey:
-                print("Error: No se pudo iniciar sesión")
-                input("Presiona Enter para continuar...")
-                continue
-
-            # Obtener elementos del curso
-            elementos = obtener_elementos_curso(session, cookie, data["base_url"], data["course_id"])
-
-            if not elementos:
-                print("No se encontraron elementos en el curso")
-                input("Presiona Enter para continuar...")
-                continue
-
-            # Encontrar la categoría padre
-            categoria_padre = encontrar_categoria_por_nombre(elementos, data["categoria_padre"])
-
-            if not categoria_padre:
-                print(f"No se encontró la categoría padre: {data['categoria_padre']}")
-                input("Presiona Enter para continuar...")
-                continue
-
-            # Encontrar todos los elementos relacionados
-            elementos_a_modificar = encontrar_elementos_por_categoria(elementos, categoria_padre["id"])
+            elementos_a_modificar = encontrar_elementos_por_categoria(elementos, categoria_padre_elem["id"])
 
             if not elementos_a_modificar:
                 print("No se encontraron elementos relacionados con la categoría padre")
@@ -1387,15 +1538,38 @@ def main():
 
             for elemento in elementos_a_modificar:
                 if elemento["tipo"] == "category":
-                    if modificar_gradepass_categoria(session, cookie, data["base_url"], sesskey, data["course_id"],
-                                                   elemento["id"], elemento["nombre"], data["configuracion_global"]):
+                    # Buscar en el JSON la configuración específica de esta categoría
+                    config_categoria = None
+                    
+                    # Primero verificar si es la categoría padre
+                    if elemento["nombre"] == categoria_padre:
+                        config_categoria = {
+                            "aggregationcoef": data['aggregationcoef']
+                        }
+                    else:
+                        # Buscar en las categorías hijas
+                        for categoria_hija in categorias_hijas:
+                            if categoria_hija["nombre"] == elemento["nombre"]:
+                                config_categoria = categoria_hija
+                                break
+                    
+                    aggregationcoef = config_categoria.get("aggregationcoef", 0.0) if config_categoria else 0.0
+                    formula = config_categoria.get("formula", "") if config_categoria else ""
+                    #print(f"Formula de la categoria: {elemento["nombre"]}: {formula}")
+                    if modificar_gradepass_categoria(session, cookie, base_url, sesskey, course_id,
+                                                elemento["id"], elemento["nombre"], config_global, aggregationcoef):
                         elementos_modificados += 1
+                    if modificar_formula_categoria(session, cookie, base_url, sesskey, course_id,
+                                        elemento["id"], elemento["nombre"], formula):
+                        print(f"✓ Fórmula actualizada para: {elemento['nombre']}")
+                    else:
+                        print(f"✗ Error al actualizar fórmula para: {elemento['nombre']}")
                 else:  # item
-                    # Buscar en el JSON la configuración específica de este item
+                    # Obtener configuración para items
                     config_item = None
-                    for categoria_hija in data["categorias_hijas"]:
+                    for categoria_hija in categorias_hijas:
                         for item_config in categoria_hija.get("elementos", []):
-                            if item_config["nombre"] == elemento["nombre"]:
+                            if isinstance(item_config, dict) and item_config["nombre"] == elemento["nombre"]:
                                 config_item = item_config
                                 break
                         if config_item:
@@ -1403,24 +1577,46 @@ def main():
 
                     idnumber = config_item.get("idnumber", "") if config_item else ""
                     aggregationcoef = config_item.get("aggregationcoef", 1.0) if config_item else 1.0
+                    formula = config_item.get("formula", "") if config_item else ""
 
-                    if modificar_gradepass_item(session, cookie, data["base_url"], sesskey, data["course_id"],
-                                              elemento["id"], elemento["nombre"], data["configuracion_global"],
-                                              idnumber, aggregationcoef):
+                    #print(f"Formula del item: {elemento["nombre"]}: {formula}")
+
+
+                    # Modificar gradepass, idnumber y aggregationcoef
+                    if modificar_gradepass_item(session, cookie, base_url, sesskey, course_id,
+                                            elemento["id"], elemento["nombre"], config_global,
+                                            idnumber, aggregationcoef):
                         elementos_modificados += 1
+                    
+                    if modificar_formula_item(session, cookie, base_url, sesskey, course_id,
+                                        elemento["id"], elemento["nombre"], formula):
+                        print(f"✓ Fórmula actualizada para: {elemento['nombre']}")
+                    else:
+                        print(f"✗ Error al actualizar fórmula para: {elemento['nombre']}")
 
             print(f"\nSe modificaron {elementos_modificados} de {len(elementos_a_modificar)} elementos")
             input("Presiona Enter para continuar...")
 
-        elif opcion == "4":
-            mostrar_ayuda_creditos()
+        elif opcion == "3":
+            # Eliminar estructura
+            cookie, sesskey = login(session, base_url, username, password)
+            if not sesskey:
+                print("Error en el login. Reintentando...")
+                session = requests.session()  # Reiniciamos la sesión
+                cookie, sesskey = login(session, base_url, username, password)
+                if not sesskey:
+                    print("Error crítico en el login. Abortando.")
+                    break
 
-        elif opcion == "5":
-            print("¡Hasta luego!")
-            break
+            print(f"Usando curso con ID: {course_id}")
 
-        else:
-            print("Opción no válida. Por favor, selecciona una opción del 0 al 4.")
+            nombre_categoria_padre = input("Introduce el nombre de la categoría padre a eliminar: ")
+            if not nombre_categoria_padre.strip():
+                print("No se ha introducido ningún nombre. Operación cancelada.")
+                continue
+
+            eliminar_estructura(session, cookie, base_url, sesskey, course_id, nombre_categoria_padre)
+            input("Presiona Enter para continuar...")
 
 if __name__ == "__main__":
     main()
