@@ -166,6 +166,27 @@ def login(session, base_url, username, password):
 
 def generar_estructura_basica():
     """Guía al usuario para generar una estructura básica de JSON"""
+    if 'APPIMAGE' in os.environ:
+        base_dir = os.path.dirname(os.environ.get('APPIMAGE'))
+
+    # Determinar el directorio de escritura
+        #DAVID
+        #base_dir = os.path.expanduser("~")
+        #base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        #base_dir = os.path.dirname(os.path.abspath(__file__))
+    # Determinar el directorio de escritura
+    elif getattr(sys, 'frozen', False):
+        # En modo AppImage, usar el directorio del ejecutable
+        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        print(f"Modo AppImage: guardando en {base_dir}")
+    else:
+        # En modo normal, usar el directorio actual
+        base_dir = os.getcwd()
+
+    print(f"{base_dir}")
+    nombre_archivo = "datos_aules_generado.json"
+    json_path = os.path.join(base_dir, nombre_archivo)
+
     print("\n" + "="*50)
     print("GENERADOR DE ESTRUCTURA BÁSICA JSON")
     print("="*50)
@@ -282,9 +303,20 @@ def generar_estructura_basica():
     }
 
     # Guardar en archivo
-    nombre_archivo = "datos_aules_generado.json"
-    with open(nombre_archivo, 'w', encoding='utf-8') as f:
-        json.dump(estructura, f, indent=2, ensure_ascii=False)
+    try:
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(estructura, f, indent=2, ensure_ascii=False)
+
+        print(f"\n✓ Estructura básica guardada en '{json_path}'")
+
+    except PermissionError:
+        print(f"Error: No se puede escribir en {json_path}")
+        print("Intenta ejecutar con permisos de administrador o elige otra ubicación.")
+        return
+    except Exception as e:
+        print(f"Error al guardar el archivo: {e}")
+        return
+
 
     print(f"\n✓ Estructura básica guardada en '{nombre_archivo}'")
     print("\nRECOMENDACIÓN: Edita manualmente el archivo para:")
@@ -365,43 +397,48 @@ def get_json_path():
 
 def cargar_datos_json():
     """Carga los datos del archivo JSON y devuelve los parámetros necesarios"""
-    try:
-        # Usar la función mejorada para encontrar el JSON
-        json_path = get_json_path()
-        print(f"Buscando JSON en: {json_path}")
+    if 'APPIMAGE' in os.environ:
+        base_dir = os.path.dirname(os.environ.get('APPIMAGE'))
 
-        if not os.path.exists(json_path):
-            print("ERROR: No se encontró datos_aules.json")
-            print("Por favor, coloca el archivo datos_aules.json en la misma carpeta que el ejecutable.")
-            print(f"Directorio actual: {os.getcwd()}")
-            if is_appimage():
-                # Mostrar información de depuración
-                print(f"Directorio del ejecutable: {os.path.dirname(os.path.abspath(sys.argv[0]))}")
-                print(f"Archivos en directorio actual: {os.listdir('.')}")
+    # Determinar el directorio de escritura
+        #DAVID
+        #base_dir = os.path.expanduser("~")
+        #base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        #base_dir = os.path.dirname(os.path.abspath(__file__))
+    # Determinar el directorio de escritura
+    elif getattr(sys, 'frozen', False):
+        # En modo AppImage, usar el directorio del ejecutable
+        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        print(f"Modo AppImage: guardando en {base_dir}")
+    else:
+        # En modo normal, usar el directorio actual
+        base_dir = os.getcwd()
+
+    print(f"{base_dir}")
+    nombre_archivo = "datos_aules.json"
+    json_path = os.path.join(base_dir, nombre_archivo)
+
+    if not os.path.exists(json_path):
+        print("ERROR: No se encontró datos_aules.json")
+        print("Por favor, coloca el archivo datos_aules.json en la misma carpeta que el ejecutable.")
+        print(f"Directorio actual: {os.getcwd()}")
+        if is_appimage():
+            # Mostrar información de depuración
+            print(f"Directorio del ejecutable: {os.path.dirname(os.path.abspath(sys.argv[0]))}")
+            print(f"Archivos en directorio actual: {os.listdir('.')}")
+        return None
+
+    with open(json_path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
+    # Verificar que existen las claves necesarias
+    required_keys = ["base_url", "username", "password", "course_id", "categoria_padre", "categorias_hijas", "configuracion_global"]
+    for key in required_keys:
+        if key not in data:
+            print(f"Error: La clave '{key}' no existe en el archivo JSON")
             return None
 
-        with open(json_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-
-        # Verificar que existen las claves necesarias
-        required_keys = ["base_url", "username", "password", "course_id", "categoria_padre", "categorias_hijas", "configuracion_global"]
-        for key in required_keys:
-            if key not in data:
-                print(f"Error: La clave '{key}' no existe en el archivo JSON")
-                return None
-
-        return data
-
-    except FileNotFoundError:
-        print("Error: No se encontró el archivo datos_aules.json")
-        return None
-    except KeyError as e:
-        print(f"Error: Falta la clave {e} en el archivo JSON")
-        return None
-    except Exception as e:
-        print(f"Error inesperado al cargar JSON: {e}")
-        return None
-
+    return data
 def obtener_elementos_curso(session, cookie, base_url, course_id):
     """Obtiene todos los elementos de calificación del curso con análisis mejorado."""
     print("Obteniendo elementos del curso...")
