@@ -203,8 +203,6 @@ Categoría padre: RA CE FEE
 Estructura deseada para categorías hijas:
 - Cada Resultado de Aprendizaje (RA) debe ser una categoría hija
 - Cada Criterio de Evaluación (CE) debe ser un elemento dentro de la categoría del RA correspondiente
-- Para cada elemento, incluye comentarios sobre cómo añadir fórmulas e idnumber si es necesario
-- Las fórmulas deben usar la sintaxis de Moodle con referencias como [[1AVA]], [[2AVA]], [[3AVA]], [[FEE]], etc.
 
 Por favor, genera el JSON completo con todos los RA y CE encontrados en el documento, tomando como ejemplo la estructura proporcionada en el json adjunto y extrayendo la informacion de RA y CE del documento pdf o de texto.
 
