@@ -13,6 +13,7 @@
 | `calificaciones_aules.bat`  | Script para la creación de un entorno virtual y ejecución del script `calificaciones_aules.py` (teniendo instalado previamente Python) en sistemas operativos Windows. |
 | `requirements.txt`          | Fichero de requisitos/dependencias, usado por `calificaciones_aules.sh` y `calificaciones_aules.bat` para lanzar `calificaciones_aules.py` |
 | `empaquetar_appimage.sh`    | Script python para empaquetar el script `calificaciones_aules.py` en un AppImage en sistemas GNU/Linux. Requiere `build.sh`. |
+| `empaquetar_mac.sh`    | Script python para empaquetar el script `calificaciones_aules.py` en un AppImage en sistemas macOS.|
 | `build.sh`                  | Script python para generrar el AppImage. Usado por `empaquetar_appimage.sh` |
 | `empaquetar_windows.bat`    | Archivo de proceso por lotes para empaquetar el script `calificaciones_aules.py` en un ejecutable (EXE) en sistemas Windows. |
 | `gestor-calificaciones.ico` | Logo de la aplicación para Windows.                          |
