@@ -92,30 +92,28 @@ jobs:
         cp -r "dist/GestorCalificacionesAules"/* "dist/GestorCalificacionesAules.app/Contents/MacOS/"
         
         # Create Info.plist
-        cat > "dist/GestorCalificacionesAules.app/Contents/Info.plist" << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>GestorCalificacionesAules</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.aules.GestorCalificacionesAules</string>
-    <key>CFBundleName</key>
-    <string>GestorCalificacionesAules</string>
-    <key>CFBundleVersion</key>
-    <string>0.6</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.6</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>10.9</string>
-</dict>
-</plist>
-EOF
+        echo '<?xml version="1.0" encoding="UTF-8"?>' > "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '<plist version="1.0">' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '<dict>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundleExecutable</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>GestorCalificacionesAules</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundleIdentifier</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>com.aules.GestorCalificacionesAules</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundleName</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>GestorCalificacionesAules</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundleVersion</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>0.6</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundleShortVersionString</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>0.6</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundlePackageType</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>APPL</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>CFBundleSignature</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>????</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <key>LSMinimumSystemVersion</key>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '    <string>10.9</string>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '</dict>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
+        echo '</plist>' >> "dist/GestorCalificacionesAules.app/Contents/Info.plist"
         
         # Copy icon if available
         if [ -f "GestorCalificacionesAules.icns" ]; then
