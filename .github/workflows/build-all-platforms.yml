@@ -1,0 +1,203 @@
+name: Build All Platforms
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Windows executable
+      run: |
+        $iconArg = if (Test-Path "gestor-calificaciones.ico") { "--icon gestor-calificaciones.ico" } else { "" }
+        
+        pyinstaller --onefile --console `
+          --name "Gestor_Calificaciones_Aules" `
+          $iconArg `
+          --hidden-import=bs4 `
+          --hidden-import=tqdm `
+          --hidden-import=requests `
+          calificaciones_aules.py
+    
+    - name: Upload Windows artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-app
+        path: dist/Gestor_Calificaciones_Aules.exe
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Generate .icns icon
+      run: |
+        if [ -f "gestor-calificaciones.png" ]; then
+          ICONSET_DIR="GestorCalificacionesAules.iconset"
+          mkdir -p "$ICONSET_DIR"
+          
+          for size in 16 32 64 128 256 512; do
+            sips -z "$size" "$size" "gestor-calificaciones.png" --out "$ICONSET_DIR/icon_${size}x${size}.png"
+            sips -z $((size*2)) $((size*2)) "gestor-calificaciones.png" --out "$ICONSET_DIR/icon_${size}x${size}@2x.png"
+          done
+          
+          iconutil -c icns "$ICONSET_DIR" -o "GestorCalificacionesAules.icns"
+        fi
+    
+    - name: Build macOS app
+      run: |
+        PYI_ARGS=(
+          --name "GestorCalificacionesAules"
+          --onefile
+          --console
+          --osx-bundle-identifier "com.aules.GestorCalificacionesAules"
+        )
+        
+        if [ -f "GestorCalificacionesAules.icns" ]; then
+          PYI_ARGS+=(--icon "GestorCalificacionesAules.icns")
+        fi
+        
+        pyinstaller "${PYI_ARGS[@]}" "calificaciones_aules.py"
+    
+    - name: Create DMG
+      run: |
+        hdiutil create -volname "GestorCalificacionesAules" \
+          -srcfolder "dist/GestorCalificacionesAules.app" \
+          -ov -format UDZO "dist/GestorCalificacionesAules.dmg"
+    
+    - name: Upload macOS artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-app
+        path: |
+          dist/GestorCalificacionesAules.app
+          dist/GestorCalificacionesAules.dmg
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Linux executable
+      run: |
+        pyinstaller --onefile --console \
+          --name "GestorCalificacionesAules" \
+          --hidden-import=bs4 \
+          --hidden-import=tqdm \
+          --hidden-import=requests \
+          calificaciones_aules.py
+    
+    - name: Create AppImage (if possible)
+      run: |
+        # Try to create AppImage using linuxdeploy
+        if command -v linuxdeploy >/dev/null 2>&1; then
+          echo "Creating AppImage..."
+          # This would require additional setup
+          echo "AppImage creation would require additional setup"
+        else
+          echo "linuxdeploy not available, skipping AppImage creation"
+        fi
+    
+    - name: Upload Linux artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-app
+        path: dist/GestorCalificacionesAules
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+    
+    - name: Create release package
+      run: |
+        mkdir -p release
+        cp windows-app/Gestor_Calificaciones_Aules.exe release/ 2>/dev/null || true
+        cp macos-app/GestorCalificacionesAules.app release/ 2>/dev/null || true
+        cp macos-app/GestorCalificacionesAules.dmg release/ 2>/dev/null || true
+        cp linux-app/GestorCalificacionesAules release/ 2>/dev/null || true
+        
+        # Create a summary file
+        cat > release/README.md << 'EOF'
+# Gestor de Calificaciones Aules - Release
+
+## Archivos incluidos:
+
+### Windows
+- `Gestor_Calificaciones_Aules.exe` - Ejecutable para Windows
+
+### macOS  
+- `GestorCalificacionesAules.app` - Aplicación para macOS
+- `GestorCalificacionesAules.dmg` - Imagen de disco para instalación
+
+### Linux
+- `GestorCalificacionesAules` - Ejecutable para Linux
+
+## Instrucciones de uso:
+
+1. Descarga el archivo correspondiente a tu sistema operativo
+2. Coloca el archivo `datos_aules.json` en la misma carpeta
+3. Ejecuta el programa
+
+## Requisitos:
+- Conexión a Internet
+- Credenciales de Aules válidas
+- ID del curso (número de 6 dígitos)
+
+## Soporte:
+- Versión: 0.6
+- Fecha: 24/09/2025
+- Autores: Manuel Sanchez (Nelo) y David Martinez
+EOF
+    
+    - name: Upload release package
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-package
+        path: release/
