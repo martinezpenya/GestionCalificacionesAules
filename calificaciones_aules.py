@@ -109,8 +109,8 @@ import argparse
 import sys
 import pydoc
 
-VERSION = "0.5"
-FECHA = "21/09/2025"
+VERSION = "0.6"
+FECHA = "24/09/2025"
 
 # Detectar si estamos en modo AppImage
 def is_appimage():
@@ -1078,45 +1078,137 @@ def insertar_categorias_y_items(session, cookie, base_url, sesskey, course_id, c
                 print(f"Error al insertar el elemento de calificación '{elemento_nombre}': {r.text}")
 
 def obtener_id_categoria_completo(session, cookie, base_url, sesskey, course_id, nombre_categoria):
-    """Obtiene el ID completo (cg######) de una categoría por su nombre"""
-    try:
-        # Obtener la página de gestión de calificaciones
-        url = f"{base_url}/grade/edit/tree/index.php?id={course_id}"
-        r = session.get(url, cookies=cookie)
-        
-        if r.status_code != 200:
-            print(f"Error al obtener página de calificaciones: {r.status_code}")
-            return None
-        
-        soup = BeautifulSoup(r.text, "html.parser")
-        
-        # Buscar todas las categorías
-        categorias = soup.find_all("tr", class_="category")
-        
-        for categoria in categorias:
-            # Extraer el nombre de la categoría
-            nombre_celda = categoria.find("td", class_="column-name")
-            if nombre_celda:
-                # Buscar el div con la clase rowtitle que contiene el nombre real
+    """Obtiene el ID completo (cg######) de una categoría por su nombre - Versión mejorada con pausas"""
+    import time
+    
+    # Intentar múltiples veces con pausas
+    max_intentos = 3
+    pausa_inicial = 2  # segundos
+    pausa_entre_intentos = 1  # segundos
+    
+    for intento in range(max_intentos):
+        try:
+            print(f"Intento {intento + 1}/{max_intentos} - Buscando categoría: '{nombre_categoria}'")
+            
+            # Pausa inicial para dar tiempo al servidor
+            if intento == 0:
+                print(f"Esperando {pausa_inicial} segundos para que el servidor procese la creación...")
+                time.sleep(pausa_inicial)
+            else:
+                print(f"Esperando {pausa_entre_intentos} segundos antes del siguiente intento...")
+                time.sleep(pausa_entre_intentos)
+            
+            # Obtener la página de gestión de calificaciones
+            url = f"{base_url}/grade/edit/tree/index.php?id={course_id}"
+            r = session.get(url, cookies=cookie)
+            
+            if r.status_code != 200:
+                print(f"Error al obtener página de calificaciones: {r.status_code}")
+                continue
+            
+            soup = BeautifulSoup(r.text, "html.parser")
+            
+            # Estrategia 1: Buscar tr con clase category
+            categorias = soup.find_all("tr", class_="category")
+            print(f"Estrategia 1 - Encontradas {len(categorias)} categorías con class='category'")
+            
+            # Estrategia 2: Si no encuentra nada, buscar por data-category
+            if not categorias:
+                categorias = soup.find_all("tr", attrs={"data-category": True})
+                print(f"Estrategia 2 - Encontradas {len(categorias)} categorías con data-category")
+            
+            # Estrategia 3: Buscar cualquier tr que contenga "grade-item-cg"
+            if not categorias:
+                categorias = soup.find_all("tr", id=lambda x: x and x.startswith("grade-item-cg"))
+                print(f"Estrategia 3 - Encontradas {len(categorias)} categorías con ID grade-item-cg")
+            
+            # Estrategia 4: Buscar por patrón en el HTML
+            if not categorias:
+                # Buscar todas las filas que contengan "RA CE" o el nombre de la categoría
+                todas_las_filas = soup.find_all("tr")
+                categorias = []
+                for fila in todas_las_filas:
+                    if fila.get_text() and nombre_categoria in fila.get_text():
+                        categorias.append(fila)
+                print(f"Estrategia 4 - Encontradas {len(categorias)} filas que contienen '{nombre_categoria}'")
+            
+            print(f"Total de categorías encontradas: {len(categorias)}")
+            
+            for categoria in categorias:
+                # Extraer el nombre de la categoría con múltiples estrategias
+                nombre_celda = categoria.find("td", class_="column-name")
+                if not nombre_celda:
+                    continue
+                    
+                categoria_name = None
+                
+                # Estrategia 1: Buscar div con clase rowtitle
                 rowtitle = nombre_celda.find("div", class_="rowtitle")
                 if rowtitle:
                     categoria_name = rowtitle.get_text(strip=True)
-                    
-                    # Comparar con el nombre que buscamos
-                    if categoria_name == nombre_categoria:
+                    print(f"Estrategia nombre 1 - Encontrado: '{categoria_name}'")
+                
+                # Estrategia 2: Si no se encuentra con rowtitle, buscar directamente en la celda
+                if not categoria_name:
+                    # Buscar cualquier elemento que contenga el texto
+                    texto_completo = nombre_celda.get_text(strip=True)
+                    if texto_completo:
+                        categoria_name = texto_completo
+                        print(f"Estrategia nombre 2 - Encontrado: '{categoria_name}'")
+                
+                # Estrategia 3: Buscar en spans con clase gradeitemheader
+                if not categoria_name:
+                    gradeitem_span = nombre_celda.find("span", class_="gradeitemheader")
+                    if gradeitem_span:
+                        categoria_name = gradeitem_span.get_text(strip=True)
+                        print(f"Estrategia nombre 3 - Encontrado: '{categoria_name}'")
+                
+                # Estrategia 4: Buscar cualquier texto que contenga el nombre
+                if not categoria_name:
+                    # Buscar en todos los elementos de texto
+                    for elemento in nombre_celda.find_all(text=True):
+                        texto = elemento.strip()
+                        if texto and nombre_categoria.lower() in texto.lower():
+                            categoria_name = texto
+                            print(f"Estrategia nombre 4 - Encontrado: '{categoria_name}'")
+                            break
+                
+                if categoria_name:
+                    # Comparar con el nombre que buscamos (comparación flexible)
+                    if (categoria_name == nombre_categoria or 
+                        categoria_name.strip() == nombre_categoria.strip() or
+                        nombre_categoria.lower() in categoria_name.lower()):
+                        
                         # El ID completo está en el atributo id del TR (grade-item-cg######)
                         if "id" in categoria.attrs:
                             categoria_id = categoria.attrs["id"].replace("grade-item-", "")
-                            print(f"ID completo de la categoría '{categoria_name}': {categoria_id}")
+                            print(f"✓ ID completo de la categoría '{categoria_name}': {categoria_id}")
                             return categoria_id
-        
-        print(f"Error: No se pudo obtener el ID completo de la categoría '{nombre_categoria}'")
-        return None
-        
-    except Exception as e:
-        print(f"Error en obtener_id_categoria_completo: {e}")
-        return None
-
+                        else:
+                            print(f"✗ Categoría encontrada pero sin ID: '{categoria_name}'")
+            
+            # Si llegamos aquí, no se encontró la categoría en este intento
+            if intento < max_intentos - 1:
+                print(f"✗ Categoría no encontrada en intento {intento + 1}, reintentando...")
+            else:
+                print(f"✗ Error: No se pudo obtener el ID completo de la categoría '{nombre_categoria}' después de {max_intentos} intentos")
+                print("Categorías disponibles:")
+                for categoria in categorias:
+                    nombre_celda = categoria.find("td", class_="column-name")
+                    if nombre_celda:
+                        texto = nombre_celda.get_text(strip=True)
+                        if texto:
+                            print(f"  - '{texto}'")
+                return None
+                
+        except Exception as e:
+            print(f"Error en obtener_id_categoria_completo (intento {intento + 1}): {e}")
+            if intento == max_intentos - 1:
+                return None
+            continue
+    
+    return None
+    
 def obtener_id_item_completo(session, cookie, base_url, sesskey, course_id, nombre_item):
     """Obtiene el ID completo (ig######) de un item por su nombre"""
     try:
