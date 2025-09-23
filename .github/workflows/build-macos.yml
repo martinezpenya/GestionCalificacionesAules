@@ -41,6 +41,7 @@ jobs:
     
     - name: Build with PyInstaller
       run: |
+        echo "Building with PyInstaller..."
         PYI_ARGS=(
           --name "GestorCalificacionesAules"
           --onefile
@@ -49,16 +50,78 @@ jobs:
         )
         
         if [ -f "GestorCalificacionesAules.icns" ]; then
+          echo "Using custom icon: GestorCalificacionesAules.icns"
           PYI_ARGS+=(--icon "GestorCalificacionesAules.icns")
+        else
+          echo "No custom icon found, using default"
         fi
         
+        echo "PyInstaller arguments: ${PYI_ARGS[*]}"
         pyinstaller "${PYI_ARGS[@]}" "calificaciones_aules.py"
+        
+        echo "Checking build results..."
+        ls -la dist/
+        if [ -d "dist/GestorCalificacionesAules.app" ]; then
+          echo "✓ App bundle created successfully"
+        else
+          echo "✗ App bundle not found, checking for executable..."
+          if [ -f "dist/GestorCalificacionesAules" ]; then
+            echo "✓ Executable found, but not as .app bundle"
+            echo "This might be due to --onefile flag"
+          else
+            echo "✗ No executable found"
+            exit 1
+          fi
+        fi
     
     - name: Create DMG
       run: |
-        hdiutil create -volname "GestorCalificacionesAules" \
-          -srcfolder "dist/GestorCalificacionesAules.app" \
-          -ov -format UDZO "dist/GestorCalificacionesAules.dmg"
+        echo "Creating DMG..."
+        
+        if [ -d "dist/GestorCalificacionesAules.app" ]; then
+          echo "Creating DMG from .app bundle"
+          hdiutil create -volname "GestorCalificacionesAules" \
+            -srcfolder "dist/GestorCalificacionesAules.app" \
+            -ov -format UDZO "dist/GestorCalificacionesAules.dmg"
+        elif [ -f "dist/GestorCalificacionesAules" ]; then
+          echo "Creating DMG from executable (creating temporary .app bundle)"
+          # Create a temporary .app bundle structure
+          mkdir -p "temp_app/GestorCalificacionesAules.app/Contents/MacOS"
+          cp "dist/GestorCalificacionesAules" "temp_app/GestorCalificacionesAules.app/Contents/MacOS/"
+          
+          # Create Info.plist
+          cat > "temp_app/GestorCalificacionesAules.app/Contents/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>GestorCalificacionesAules</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.aules.GestorCalificacionesAules</string>
+    <key>CFBundleName</key>
+    <string>GestorCalificacionesAules</string>
+    <key>CFBundleVersion</key>
+    <string>0.6</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.6</string>
+</dict>
+</plist>
+EOF
+          
+          hdiutil create -volname "GestorCalificacionesAules" \
+            -srcfolder "temp_app/GestorCalificacionesAules.app" \
+            -ov -format UDZO "dist/GestorCalificacionesAules.dmg"
+          
+          # Clean up
+          rm -rf "temp_app"
+        else
+          echo "✗ No executable found to create DMG"
+          exit 1
+        fi
+        
+        echo "✓ DMG created successfully"
+        ls -la dist/*.dmg
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -66,4 +129,5 @@ jobs:
         name: macos-app
         path: |
           dist/GestorCalificacionesAules.app
+          dist/GestorCalificacionesAules
           dist/GestorCalificacionesAules.dmg
