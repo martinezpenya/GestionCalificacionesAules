@@ -25,27 +25,26 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
     
-    - name: Check for icon file
-      run: |
-        if (Test-Path "gestor-calificaciones.ico") {
-          Write-Host "Icon found: gestor-calificaciones.ico"
-          $env:ICON_OPTION = "--icon gestor-calificaciones.ico"
-        } else {
-          Write-Host "WARNING: Icon file not found, continuing without icon"
-          $env:ICON_OPTION = ""
-        }
-    
     - name: Build with PyInstaller
       run: |
-        $iconArg = if ($env:ICON_OPTION) { $env:ICON_OPTION } else { "" }
+        Write-Host "Building executable with PyInstaller..."
         
-        pyinstaller --onefile --console `
-          --name "Gestor_Calificaciones_Aules" `
-          $iconArg `
-          --hidden-import=bs4 `
-          --hidden-import=tqdm `
-          --hidden-import=requests `
-          calificaciones_aules.py
+        # Check for icon
+        if (Test-Path "gestor-calificaciones.ico") {
+          Write-Host "Icon found: gestor-calificaciones.ico"
+          pyinstaller --onefile --console --name "Gestor_Calificaciones_Aules" --icon "gestor-calificaciones.ico" --hidden-import=bs4 --hidden-import=tqdm --hidden-import=requests --hidden-import=urllib.parse --hidden-import=json --hidden-import=re --hidden-import=time --hidden-import=os --hidden-import=sys --hidden-import=argparse --hidden-import=pydoc calificaciones_aules.py
+        } else {
+          Write-Host "No icon found, building without icon"
+          pyinstaller --onefile --console --name "Gestor_Calificaciones_Aules" --hidden-import=bs4 --hidden-import=tqdm --hidden-import=requests --hidden-import=urllib.parse --hidden-import=json --hidden-import=re --hidden-import=time --hidden-import=os --hidden-import=sys --hidden-import=argparse --hidden-import=pydoc calificaciones_aules.py
+        }
+        
+        Write-Host "Build completed"
+        if (Test-Path "dist/Gestor_Calificaciones_Aules.exe") {
+          Write-Host "OK Executable created successfully"
+        } else {
+          Write-Host "X Executable not found"
+          exit 1
+        }
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
