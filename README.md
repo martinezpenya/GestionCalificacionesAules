@@ -214,7 +214,7 @@ Copia este prompt y guardalo para usarlo mas tarde. Presiona Enter para continua
 
 ```
 
-Y este es el json creado datos_aules_generado.json:
+Y este es el json creado: `datos_aules_generado.json`:
 
 ```json
 {
