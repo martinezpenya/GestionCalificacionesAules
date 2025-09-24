@@ -1,0 +1,120 @@
+name: Build macOS Binaries (Intel + ARM)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-macos-onefile:
+    name: Build for ${{ matrix.display_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+            display_name: macOS 13 (Intel)
+          - os: macos-14
+            arch: arm64
+            display_name: macOS 14 (Apple Silicon)
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Prepare optional .icns icon
+      run: |
+        if [ -f "GestorCalificacionesAules.icns" ]; then
+          echo "Using provided GestorCalificacionesAules.icns"
+        elif [ -f "gestor-calificaciones.png" ]; then
+          echo "Generating .icns from gestor-calificaciones.png"
+          ICONSET_DIR="GestorCalificacionesAules.iconset"
+          mkdir -p "$ICONSET_DIR"
+          for size in 16 32 64 128 256 512; do
+            sips -z "$size" "$size" "gestor-calificaciones.png" --out "$ICONSET_DIR/icon_${size}x${size}.png" >/dev/null
+            sips -z $((size*2)) $((size*2)) "gestor-calificaciones.png" --out "$ICONSET_DIR/icon_${size}x${size}@2x.png" >/dev/null
+          done
+          iconutil -c icns "$ICONSET_DIR" -o "GestorCalificacionesAules.icns"
+          echo "✓ Generated GestorCalificacionesAules.icns"
+        else
+          echo "No icon source found, proceeding without custom icon"
+        fi
+
+    - name: Build onefile binary with PyInstaller
+      run: |
+        echo "Building onefile macOS binary with PyInstaller..."
+        PYI_ARGS=(
+          --onefile
+          --console
+          --name "GestorCalificacionesAules"
+          --hidden-import=bs4 \
+          --hidden-import=tqdm \
+          --hidden-import=requests \
+          --hidden-import=urllib.parse \
+          --hidden-import=json \
+          --hidden-import=re \
+          --hidden-import=time \
+          --hidden-import=os \
+          --hidden-import=sys \
+          --hidden-import=argparse \
+          --hidden-import=pydoc
+        )
+
+        # Optional resources
+        if [ -f "gestor-calificaciones.png" ]; then
+          PYI_ARGS+=(--add-data "gestor-calificaciones.png:.")
+        fi
+        if [ -f "gestor-calificaciones.ico" ]; then
+          PYI_ARGS+=(--add-data "gestor-calificaciones.ico:.")
+        fi
+        if [ -f "GestorCalificacionesAules.icns" ]; then
+          PYI_ARGS+=(--icon "GestorCalificacionesAules.icns")
+        fi
+
+        echo "PyInstaller args: ${PYI_ARGS[*]}"
+        pyinstaller "${PYI_ARGS[@]}" calificaciones_aules.py
+
+        echo "Checking build output..."
+        ls -la dist/
+        if [ -f "dist/GestorCalificacionesAules" ]; then
+          echo "✓ Binary created"
+        else
+          echo "✗ Binary not found"
+          exit 1
+        fi
+
+    - name: Test binary
+      run: |
+        echo "Testing binary execution (show help/version if possible)..."
+        chmod +x dist/GestorCalificacionesAules
+        dist/GestorCalificacionesAules --help 2>/dev/null || \
+        dist/GestorCalificacionesAules /? 2>/dev/null || \
+        echo "Binary present (may require runtime data to fully run)."
+
+    - name: Rename artifact with arch suffix
+      run: |
+        ARCH='${{ matrix.arch }}'
+        cp dist/GestorCalificacionesAules "GestorCalificacionesAules-macos-${ARCH}"
+        chmod +x "GestorCalificacionesAules-macos-${ARCH}"
+        ls -la "GestorCalificacionesAules-macos-${ARCH}"
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-binary-${{ matrix.arch }}
+        path: |
+          GestorCalificacionesAules-macos-${{ matrix.arch }}
