@@ -4,7 +4,7 @@
 
 # Ayuda
 ## Funcionamiento básico
-<iframe width="560" height="315" src="https://www.youtube.com/embed/wSBCkJVSGhM?si=6Gdmhsmgzk0YYNYS" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Funcionamiento básico](https://img.youtube.com/vi/wSBCkJVSGhM/0.jpg)](https://www.youtube.com/watch?v=wSBCkJVSGhM)
 
 # Contenido
 
