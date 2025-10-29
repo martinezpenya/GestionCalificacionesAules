@@ -260,4 +260,5 @@ Y este es el json creado: `datos_aules_generado.json`:
 }
 ```
 
-(https://github.com/sponsors/martinezpenya)[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/martinezpenya)
+[<img align="left" height="18px" alt="martinezpenya | Sponsor" src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86" />](https://github.com/sponsors/martinezpenya)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/martinezpenya)
