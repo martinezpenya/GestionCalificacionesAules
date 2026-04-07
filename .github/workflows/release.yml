@@ -107,9 +107,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
       - name: Prepare Release Files
         run: |
           mkdir release_assets
@@ -117,7 +114,33 @@ jobs:
           find . -name "*.exe" -exec cp {} release_assets/ \;
           find . -name "*.dmg" -exec cp {} release_assets/ \;
           find . -name "*.sha256" -exec cp {} release_assets/ \;
+          
+          # Crear el cuerpo de la Release
+          cat > release_assets/body.md << 'EOF'
+          # 🚀 Gestión de Calificaciones Aules v${{ github.ref_name }}
+
+          Herramienta multiplataforma profesional para la sincronización inteligente y gestión del libro de calificaciones en Aules (Moodle).
+
+          ## 📦 Descargas por Plataforma
+
+          | Plataforma | Archivo | Instrucciones de Ejecución |
+          | :--- | :--- | :--- |
+          | **Windows** | `.exe` | Haz doble clic para iniciar la interfaz gráfica. |
+          | **Linux** | `.AppImage` | Dale permisos de ejecución (`chmod +x`) y ejecútalo. |
+          | **macOS** | `.dmg` | Abre el disco, haz **Botón Derecho > Abrir** sobre la App para saltar el aviso de Gatekeeper. |
+
+          ## 📚 Documentación
+          - [Guía de Usuario (README.md)](https://github.com/${{ github.repository }}/blob/main/README.md)
+          - [Manual Técnico (README_TECNICO.md)](https://github.com/${{ github.repository }}/blob/main/README_TECNICO.md)
+
+          ---
+          ### 🔒 Verificación de Integridad (SHA-256)
+          ```text
+          EOF
+          
           cd release_assets
+          cat *.sha256 >> body.md
+          echo "```" >> body.md
           cat *.sha256 > SHA256SUMS.txt
 
       - name: Create Release
@@ -125,7 +148,7 @@ jobs:
         with:
           files: |
             release_assets/*
-          body_path: release_assets/SHA256SUMS.txt
+          body_path: release_assets/body.md
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
