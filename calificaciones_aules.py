@@ -108,6 +108,7 @@ import os
 import argparse
 import sys
 import pydoc
+import getpass
 
 VERSION = "0.6"
 FECHA = "24/09/2025"
@@ -222,7 +223,7 @@ def generar_estructura_basica():
         base_url = input("Introduce la URL base personalizada: ")
 
     username = input("Nombre de usuario (Tu DNI): ")
-    password = input("Contraseña (de AULES): ")
+    password = getpass.getpass("Contraseña (de AULES): ")
     course_id = input("ID del curso (cuando entres al curso el ultimo numero de 6 digitos que aparece detras del view.php?id=XXXXXX): ")
 
     # Configuración global
