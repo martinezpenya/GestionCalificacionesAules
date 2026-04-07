@@ -112,7 +112,7 @@ import getpass
 import platform
 
 # --- CONSTANTES ---
-VERSION = "1.7.6"
+VERSION = "1.8.0"
 FECHA = "07/04/2026"
 
 # --- UTILIDADES ---

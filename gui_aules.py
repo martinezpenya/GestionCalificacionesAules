@@ -8,7 +8,7 @@ import os
 from calificaciones_aules import AulesClient, insertar_categorias_y_items, eliminar_estructura, actualizar_formulas, cargar_datos_json, sincronizar_todo, guardar_datos_json, get_json_path
 
 # Versión de la Aplicación (Control de cambios)
-__version__ = "1.7.6"
+__version__ = "1.8.0"
 
 # Configuración de apariencia
 ctk.set_appearance_mode("Dark")

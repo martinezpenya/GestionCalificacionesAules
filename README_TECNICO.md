@@ -120,10 +120,10 @@ Para realizar un lanzamiento oficial, sigue estos pasos:
 Edita los archivos `gui_aules.py` y `calificaciones_aules.py`. Ambas versiones deben coincidir:
 ```python
 # En gui_aules.py
-__version__ = "1.7.1"
+__version__ = "1.8.0"
 
 # En calificaciones_aules.py
-VERSION = "1.7.1"
+VERSION = "1.8.0"
 ```
 
 ### 2. Confirmar los Cambios (Git Commit)
