@@ -111,7 +111,7 @@ import pydoc
 import getpass
 
 # --- CONSTANTES ---
-VERSION = "1.6.4"
+VERSION = "1.6.5"
 FECHA = "07/04/2026"
 
 # --- UTILIDADES ---

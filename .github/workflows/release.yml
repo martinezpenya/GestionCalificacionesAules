@@ -78,6 +78,8 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           pyinstaller --onefile --noconsole --name "GestorCalificacionesAules" --collect-all customtkinter gui_aules.py
+          # Firma ad-hoc para evitar algunos bloqueos de ejecución en macOS
+          codesign --force --deep --sign - "dist/GestorCalificacionesAules"
           mkdir -p dmg_root
           cp dist/GestorCalificacionesAules dmg_root/
           hdiutil create -volname "GestorCuadernoAules" -srcfolder dmg_root -ov -format UDZO ${{ matrix.exec_name }}
