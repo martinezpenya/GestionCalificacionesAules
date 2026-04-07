@@ -2,3 +2,5 @@ beautifulsoup4
 requests
 tqdm
 customtkinter
+Pillow
+packaging
