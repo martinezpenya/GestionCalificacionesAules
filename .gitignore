@@ -20,11 +20,6 @@ Thumbs.db
 
 # Secrets
 datos_aules.json
+datos_aules.json.old
+datos_aules_generado.json
 *.json
-!datos_aules_generado.json
-datos_aules.json
-datos_aules.json.old
-datos_aules_generado.json
-datos_aules.json
-datos_aules.json.old
-datos_aules_generado.json
