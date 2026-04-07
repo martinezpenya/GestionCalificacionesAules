@@ -2,6 +2,10 @@
 - Idea inicial: Manuel Sanchez (Nelo) me.sanchezgomis@edu.gva.es
 - Ampliación de funcionalidades, comentarios y reusabilidad: David Martinez (www.martinezpenya.es)
 
+# Ayuda
+## Funcionamiento básico
+[![Funcionamiento básico](https://img.youtube.com/vi/wSBCkJVSGhM/0.jpg)](https://www.youtube.com/watch?v=wSBCkJVSGhM)
+
 # Contenido
 
 ## Código
@@ -256,3 +260,5 @@ Y este es el json creado: `datos_aules_generado.json`:
 }
 ```
 
+[<img align="left" height="18px" alt="martinezpenya | Sponsor" src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86" />](https://github.com/sponsors/martinezpenya)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/martinezpenya)
