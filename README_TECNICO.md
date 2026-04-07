@@ -97,6 +97,19 @@ Si deseas que una IA genere el JSON completo a partir de un PDF de tu programaci
 Para usuarios que necesiten depurar o firmar manualmente el binario:
 *   El binario se construye con `PyInstaller` usando el modo `--onefile`.
 *   La firma ad-hoc se puede verificar con: `codesign -dvv Gestor_Calificaciones_Aules`.
+## 🔧 Arquitectura de Persistencia Dinámica
+
+A partir de la **v1.7.1**, el sistema utiliza una lógica de búsqueda inteligente para el archivo `datos_aules.json` a través de la función `get_json_path()`. Esto garantiza que la aplicación sea funcional incluso en entornos de solo lectura (como discos virtuales .dmg de macOS o instalaciones protegidas).
+
+### Orden de Prioridad:
+1.  **Directorio Local (Portable)**: Busca el archivo en la misma carpeta que el ejecutable o el script. Ideal para uso desde un pendrive.
+2.  **Carpeta de Documentos (Instalado)**: Si no existe el archivo local, busca y crea automáticamente la carpeta `~/Documents/GestionCalificacionesAules/`. Este es el comportamiento por defecto en macOS para evitar errores de permisos.
+
+### Implementación Técnica:
+Las funciones `cargar_datos_json()` y `guardar_datos_json()` delegan la resolución de la ruta a `get_json_path()`, que utiliza `sys.argv[0]` para identificar la ubicación real del binario cuando la aplicación está congelada (frozen) por PyInstaller.
+
+---
+
 ## 🚀 Proceso de Actualización y Lanzamiento (CI/CD)
 
 El repositorio está configurado con **GitHub Actions** para generar automáticamente los ejecutables multiplataforma (.AppImage, .exe, .dmg) cada vez que se publica una nueva versión.
@@ -104,32 +117,37 @@ El repositorio está configurado con **GitHub Actions** para generar automática
 Para realizar un lanzamiento oficial, sigue estos pasos:
 
 ### 1. Incrementar la Versión
-Edita el archivo `gui_aules.py` y actualiza la constante de versión:
+Edita los archivos `gui_aules.py` y `calificaciones_aules.py`. Ambas versiones deben coincidir:
 ```python
-# Versión de la Aplicación
-__version__ = "X.Y.Z"
+# En gui_aules.py
+__version__ = "1.7.1"
+
+# En calificaciones_aules.py
+VERSION = "1.7.1"
 ```
 
 ### 2. Confirmar los Cambios (Git Commit)
 Añade tus cambios y realiza un commit descriptivo:
 ```bash
 git add .
-git commit -m "feat: Descripción del cambio y subida a vX.Y.Z"
+git commit -m "feat: Descripción del cambio y subida a v1.7.1"
 git push origin main
 ```
 
 ### 3. Crear y Subir el Tag (Disparador de Release)
 El flujo de trabajo se activa únicamente cuando se sube una etiqueta (tag) que empieza por `v`:
 ```bash
-# Crear la etiqueta localmente
-git tag -a vX.Y.Z -m "Versión vX.Y.Z"
+# Eliminar tags antiguos si es necesario repetir el lanzamiento
+git tag -d v1.7.1
+git push origin :refs/tags/v1.7.1
 
-# Subir la etiqueta a GitHub
-git push origin vX.Y.Z
+# Crear y subir el nuevo Tag
+git tag -a v1.7.1 -m "Versión v1.7.1 oficial"
+git push origin v1.7.1
 ```
 
 ### 4. Recoger los Ejecutables
-Una vez subido el Tag, entra en la pestaña **"Actions"** de tu repositorio en GitHub. Verás un proceso llamado "Build and Release". Al terminar (aprox. 5 min), los ejecutables aparecerán automáticamente en la sección **"Releases"** del repositorio.
+Una vez subido el Tag, entra en la pestaña **"Actions"** de tu repositorio en GitHub. Verás un proceso llamado "Build and Release". Al terminar (aprox. 5 min), los ejecutables aparecerán automáticamente en la sección **"Releases"** del repositorio con su descripción profesional y sumas de verificación.
 
 ---
 

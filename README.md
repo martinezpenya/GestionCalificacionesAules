@@ -41,9 +41,15 @@ Es una herramienta unificada con menú interactivo diseñada para docentes que n
 
 ---
 
-## ⚙️ Configuración (`datos_aules.json`)
+## ⚙️ Configuración y Persistencia de Datos (`datos_aules.json`)
 
-La aplicación busca este archivo en la misma carpeta donde se encuentra instalada.
+La aplicación utiliza un sistema de **Ruta Inteligente** para buscar y guardar tus configuraciones de forma segura:
+
+1.  **Modo Portable**: El sistema busca primero en la **misma carpeta** donde se encuentra el ejecutable. Esto es ideal para llevar la App y tus datos en un pendrive.
+2.  **Modo Instalado (Recomendado)**: Si no existe un archivo local, la aplicación guardará y buscará tus datos automáticamente en tu carpeta personal de **Documentos**, dentro de la subcarpeta `GestionCalificacionesAules`.
+
+> [!TIP]
+> **Usuarios de macOS**: Si ejecutas la App desde Aplicaciones o desde un disco virtual (.dmg), tus configuraciones se guardarán automáticamente en tu carpeta de Documentos para evitar errores de permisos.
 
 ```json
 {

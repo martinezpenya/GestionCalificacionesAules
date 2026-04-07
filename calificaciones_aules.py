@@ -111,7 +111,7 @@ import pydoc
 import getpass
 
 # --- CONSTANTES ---
-VERSION = "1.7.0"
+VERSION = "1.7.2"
 FECHA = "07/04/2026"
 
 # --- UTILIDADES ---
@@ -457,58 +457,55 @@ def get_json_path():
     else:
         return os.path.join(os.getcwd(), 'datos_aules.json')
 
-def cargar_datos_json():
-    """Carga los datos del archivo JSON y devuelve los parámetros necesarios"""
+def get_json_path():
+    """Determina la ruta del archivo datos_aules.json priorizando local y luego Documentos."""
+    nombre_archivo = "datos_aules.json"
+    
+    # 1. Prioridad: Directorio actual de ejecución o del binario (Modo Portable)
     if 'APPIMAGE' in os.environ:
         base_dir = os.path.dirname(os.environ.get('APPIMAGE'))
-
-    # Determinar el directorio de escritura
     elif getattr(sys, 'frozen', False):
-        # En modo AppImage, usar el directorio del ejecutable
         base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        print(f"Modo AppImage: guardando en {base_dir}")
     else:
-        # En modo normal, usar el directorio actual
         base_dir = os.getcwd()
+    
+    local_path = os.path.join(base_dir, nombre_archivo)
+    if os.path.exists(local_path):
+        return local_path
 
-    print(f"{base_dir}")
-    nombre_archivo = "datos_aules.json"
-    json_path = os.path.join(base_dir, nombre_archivo)
+    # 2. Alternativa: Carpeta de Documentos del usuario (Modo Instalado)
+    try:
+        user_docs = os.path.join(os.path.expanduser("~"), "Documents", "GestionCalificacionesAules")
+        if not os.path.exists(user_docs):
+            os.makedirs(user_docs, exist_ok=True)
+        return os.path.join(user_docs, nombre_archivo)
+    except:
+        return local_path # Fallback final
 
+def cargar_datos_json():
+    """Carga los datos del archivo JSON en la ruta inteligente."""
+    json_path = get_json_path()
+    
     if not os.path.exists(json_path):
-        print("ERROR: No se encontró datos_aules.json")
-        print("Por favor, coloca el archivo datos_aules.json en la misma carpeta que el ejecutable.")
-        print(f"Directorio actual: {os.getcwd()}")
-        if is_appimage():
-            # Mostrar información de depuración
-            print(f"Directorio del ejecutable: {os.path.dirname(os.path.abspath(sys.argv[0]))}")
-            print(f"Archivos en directorio actual: {os.listdir('.')}")
+        # En el primer arranque, esto es normal.
         return None
 
-    with open(json_path, 'r', encoding='utf-8') as file:
-        data = json.load(file)
-
-    # Verificar que existen las claves necesarias
-    required_keys = ["base_url", "username", "password", "course_id", "categoria_padre", "categorias_hijas", "configuracion_global"]
-    for key in required_keys:
-        if key not in data:
-            print(f"Error: La clave '{key}' no existe en el archivo JSON")
+    try:
+        with open(json_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+            
+            # Verificar claves básicas para asegurar integridad
+            required = ["base_url", "username", "password", "course_id"]
+            if all(k in data for k in required):
+                return data
             return None
-
-    return data
+    except Exception as e:
+        print(f"Error al cargar JSON: {e}")
+        return None
 
 def guardar_datos_json(data):
-    """Guarda los datos proporcionados en el archivo datos_aules.json"""
-    if 'APPIMAGE' in os.environ:
-        base_dir = os.path.dirname(os.environ.get('APPIMAGE'))
-    elif getattr(sys, 'frozen', False):
-        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    else:
-        base_dir = os.getcwd()
-
-    nombre_archivo = "datos_aules.json"
-    json_path = os.path.join(base_dir, nombre_archivo)
-
+    """Guarda los datos en el archivo JSON (local o Documentos)."""
+    json_path = get_json_path()
     try:
         with open(json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, indent=2, ensure_ascii=False)

@@ -118,32 +118,30 @@ jobs:
           find . -name "*.dmg" -exec cp {} release_assets/ \;
           find . -name "*.sha256" -exec cp {} release_assets/ \;
           
-          # Crear el cuerpo de la Release
-          cat > release_assets/body.md << 'EOF'
-          # 🚀 Gestión de Calificaciones Aules v${{ github.ref_name }}
-
-          Herramienta multiplataforma profesional para la sincronización inteligente y gestión del libro de calificaciones en Aules (Moodle).
-
-          ## 📦 Descargas por Plataforma
-
-          | Plataforma | Archivo | Instrucciones de Ejecución |
-          | :--- | :--- | :--- |
-          | **Windows** | `.exe` | Haz doble clic para iniciar la interfaz gráfica. |
-          | **Linux** | `.AppImage` | Dale permisos de ejecución (`chmod +x`) y ejecútalo. |
-          | **macOS** | `.dmg` | Abre el disco y haz **Botón Derecho > Abrir**. Si se bloquea, ve a **Ajustes del Sistema > Privacidad y seguridad** y pulsa en **"Abrir igualmente"**. |
-
-          ## 📚 Documentación
-          - [Guía de Usuario (README.md)](https://github.com/${{ github.repository }}/blob/main/README.md)
-          - [Manual Técnico (README_TECNICO.md)](https://github.com/${{ github.repository }}/blob/main/README_TECNICO.md)
-
-          ---
-          ### 🔒 Verificación de Integridad (SHA-256)
-          ```text
-          EOF
+          # Crear el cuerpo de la Release de forma robusta
+          echo "# 🚀 Gestión de Calificaciones Aules v${{ github.ref_name }}" > release_assets/body.md
+          echo "" >> release_assets/body.md
+          echo "Herramienta multiplataforma profesional para la sincronización inteligente y gestión del libro de calificaciones en Aules (Moodle)." >> release_assets/body.md
+          echo "" >> release_assets/body.md
+          echo "## 📦 Descargas por Plataforma" >> release_assets/body.md
+          echo "" >> release_assets/body.md
+          echo "| Plataforma | Archivo | Instrucciones de Ejecución |" >> release_assets/body.md
+          echo "| :--- | :--- | :--- |" >> release_assets/body.md
+          echo "| **Windows** | \`.exe\` | Haz doble clic para iniciar la interfaz gráfica. |" >> release_assets/body.md
+          echo "| **Linux** | \`.AppImage\` | Dale permisos de ejecución (\`chmod +x\`) y ejecútalo. |" >> release_assets/body.md
+          echo "| **macOS** | \`.dmg\` | Abre el disco y haz **Botón Derecho > Abrir**. Si se bloquea, ve a **Ajustes del Sistema > Privacidad y seguridad** y pulsa en **\"Abrir igualmente\"**. |" >> release_assets/body.md
+          echo "" >> release_assets/body.md
+          echo "## 📚 Documentación" >> release_assets/body.md
+          echo "- [Guía de Usuario (README.md)](https://github.com/${{ github.repository }}/blob/main/README.md)" >> release_assets/body.md
+          echo "- [Manual Técnico (README_TECNICO.md)](https://github.com/${{ github.repository }}/blob/main/README_TECNICO.md)" >> release_assets/body.md
+          echo "" >> release_assets/body.md
+          echo "---" >> release_assets/body.md
+          echo "### 🔒 Verificación de Integridad (SHA-256)" >> release_assets/body.md
+          echo "\`\`\`text" >> release_assets/body.md
           
           cd release_assets
           cat *.sha256 >> body.md
-          echo "```" >> body.md
+          echo "\`\`\`" >> body.md
           cat *.sha256 > SHA256SUMS.txt
 
       - name: Create Release
