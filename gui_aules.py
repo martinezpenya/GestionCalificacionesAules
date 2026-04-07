@@ -5,10 +5,10 @@ import time
 import threading
 import json
 import os
-from calificaciones_aules import AulesClient, insertar_categorias_y_items, eliminar_estructura, actualizar_formulas, cargar_datos_json, sincronizar_todo, guardar_datos_json
+from calificaciones_aules import AulesClient, insertar_categorias_y_items, eliminar_estructura, actualizar_formulas, cargar_datos_json, sincronizar_todo, guardar_datos_json, get_json_path
 
 # Versión de la Aplicación (Control de cambios)
-__version__ = "1.7.4"
+__version__ = "1.7.6"
 
 # Configuración de apariencia
 ctk.set_appearance_mode("Dark")
@@ -143,15 +143,18 @@ class App(ctk.CTk):
 
     def init_json_view(self):
         self.json_frame.grid_columnconfigure(0, weight=1)
-        self.json_frame.grid_rowconfigure(1, weight=1)
-        
+        self.json_frame.grid_rowconfigure(2, weight=1)
+
         ctk.CTkLabel(self.json_frame, text="Configuración del Cuaderno (JSON)", font=ctk.CTkFont(size=22, weight="bold")).grid(row=0, column=0, padx=20, pady=(40, 10), sticky="w")
+        
+        self.json_path_label = ctk.CTkLabel(self.json_frame, text="Ruta: (sin datos cargados)", text_color="gray", font=ctk.CTkFont(size=11))
+        self.json_path_label.grid(row=1, column=0, padx=20, pady=(0, 5), sticky="w")
+        
         self.json_text = ctk.CTkTextbox(self.json_frame, font=("Courier", 12), fg_color=("white", "gray10"))
-        self.json_text.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        self.json_text.grid(row=2, column=0, padx=20, pady=(0, 10), sticky="nsew")
         
         self.btn_refresh_json = ctk.CTkButton(self.json_frame, text="Sincronizar Aplicación con Archivo JSON", height=40, command=self.reload_all_data_event)
-        self.json_frame.grid_rowconfigure(2, weight=0)
-        self.btn_refresh_json.grid(row=2, column=0, padx=20, pady=20, sticky="w")
+        self.btn_refresh_json.grid(row=3, column=0, padx=20, pady=(0, 20), sticky="w")
 
     def init_logs_view(self):
         self.logs_frame.grid_columnconfigure(0, weight=1)
@@ -208,9 +211,10 @@ class App(ctk.CTk):
         try:
             data = cargar_datos_json()
             if data:
-                # 1. Actualizar Vista Previa de Texto
+                # 1. Actualizar Vista Previa de Texto y Ruta
                 self.json_text.delete("1.0", "end")
                 self.json_text.insert("1.0", json.dumps(data, indent=2, ensure_ascii=False))
+                self.json_path_label.configure(text=f"Ruta: {get_json_path()}")
                 
                 # 2. Actualizar Campos de Conexión
                 if "base_url" in data: self.url_var.set(data["base_url"])
