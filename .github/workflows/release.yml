@@ -87,17 +87,19 @@ jobs:
       - name: Generate Checksums
         shell: bash
         run: |
-          # Asegurarse de que el binario está en la carpeta dist/ y generar el hash allí
-          cd dist
-          sha256sum ${{ matrix.exec_name }} > ../${{ matrix.exec_name }}.sha256
-          cd ..
+          # Si el archivo está en dist/ (Windows), lo movemos a la raíz para unificar
+          if [ -f "dist/${{ matrix.exec_name }}" ]; then
+            mv "dist/${{ matrix.exec_name }}" .
+          fi
+          # Generar el hash del archivo que ahora está en la raíz
+          sha256sum "${{ matrix.exec_name }}" > "${{ matrix.exec_name }}.sha256"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            dist/${{ matrix.exec_name }}
+            ${{ matrix.exec_name }}
             ${{ matrix.exec_name }}.sha256
 
   release:
