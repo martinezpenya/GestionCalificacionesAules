@@ -72,7 +72,7 @@ jobs:
       - name: Build Windows
         if: matrix.os == 'windows-latest'
         run: |
-          pyinstaller --onefile --noconsole --name "Gestor_Calificaciones_Aules" --collect-all customtkinter gui_aules.py
+          pyinstaller --clean --onefile --windowed --name "Gestor_Calificaciones_Aules" --collect-all customtkinter gui_aules.py
 
       - name: Build macOS
         if: matrix.os == 'macos-latest'
