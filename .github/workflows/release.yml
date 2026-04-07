@@ -84,14 +84,18 @@ jobs:
           cp dist/GestorCalificacionesAules dmg_root/
           hdiutil create -volname "GestorCuadernoAules" -srcfolder dmg_root -ov -format UDZO ${{ matrix.exec_name }}
 
+      - name: Generate Checksums
+        shell: bash
+        run: |
+          sha256sum ${{ matrix.exec_name }} > ${{ matrix.exec_name }}.sha256
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
             ${{ matrix.exec_name }}
-            dist/*.exe
-            *.dmg
+            ${{ matrix.exec_name }}.sha256
 
   release:
     name: Create GitHub Release
@@ -101,13 +105,22 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
+      - name: Prepare Release Files
+        run: |
+          mkdir release_assets
+          find . -name "*.AppImage" -exec cp {} release_assets/ \;
+          find . -name "*.exe" -exec cp {} release_assets/ \;
+          find . -name "*.dmg" -exec cp {} release_assets/ \;
+          find . -name "*.sha256" -exec cp {} release_assets/ \;
+          cd release_assets
+          cat *.sha256 > SHA256SUMS.txt
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            linux-appimage/*.AppImage
-            windows-exe/*.exe
-            macos-dmg/*.dmg
+            release_assets/*
+          body_path: release_assets/SHA256SUMS.txt
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
