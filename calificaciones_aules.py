@@ -111,7 +111,7 @@ import pydoc
 import getpass
 
 # --- CONSTANTES ---
-VERSION = "1.6.2"
+VERSION = "1.6.4"
 FECHA = "07/04/2026"
 
 # --- UTILIDADES ---
@@ -1322,8 +1322,8 @@ Incluye prompt específico para crear JSON completos a partir de documentos con 
     pydoc.pager(texto)
     input("\nPresiona Enter para volver al menú principal...")
 
-def main():
-    """Función principal del script."""
+def run_cli():
+    """Función para el modo interactivo por consola."""
     if is_appimage():
         print("=== GESTOR DE CALIFICACIONES AULES ===")
         print("Ejecutando en modo AppImage")
@@ -1387,4 +1387,4 @@ def main():
         input("\nProceso finalizado. Presiona Enter para continuar...")
 
 if __name__ == "__main__":
-    main()
+    run_cli()
