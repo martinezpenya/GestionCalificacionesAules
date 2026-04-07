@@ -1,0 +1,24 @@
+# Python virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Flet temporary files
+.flet/
+build/
+dist/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Secrets
+datos_aules.json
+*.json
+!datos_aules_generado.json

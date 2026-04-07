@@ -1,92 +1,76 @@
-# Autores
-- Idea inicial: Manuel Sanchez (Nelo) me.sanchezgomis@edu.gva.es
-- Ampliación de funcionalidades, comentarios y reusabilidad: David Martinez (www.martinezpenya.es)
+# 🎓 Gestor automatizado del cuaderno de calificación de Aules
 
-# Ayuda
-## Funcionamiento básico
+> **Gestión eficiente, rápida y automatizada de estructuras de calificación en Aules (Moodle).**
+
+[![Aules](https://img.shields.io/badge/Plataforma-Aules%20(Moodle)-orange.svg)](https://aules.edu.gva.es)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 📺 Videotutorial: Funcionamiento Básico
+Haz clic en la imagen inferior para ver cómo empezar a utilizar la herramienta:
+
 [![Funcionamiento básico](https://img.youtube.com/vi/wSBCkJVSGhM/0.jpg)](https://www.youtube.com/watch?v=wSBCkJVSGhM)
 
-# Contenido
+---
 
-## Código
+## 🚀 ¿Qué es el Gestor automatizado del cuaderno de calificación de Aules?
 
-| Fichero                     | Descripción                                                  |
-| --------------------------- | ------------------------------------------------------------ |
-| `calificaciones_aules.py`   | Script en python para la gestión de libro de calificaciones en AULES (Moodle) |
-| `calificaciones_aules.sh`   | Script para la creación de un entorno virtual y ejecución del script `calificaciones_aules.py` (teniendo instalado previamente Python) en distribuciones GNU/linux. |
-| `calificaciones_aules.bat`  | Script para la creación de un entorno virtual y ejecución del script `calificaciones_aules.py` (teniendo instalado previamente Python) en sistemas operativos Windows. |
-| `requirements.txt`          | Fichero de requisitos/dependencias, usado por `calificaciones_aules.sh` y `calificaciones_aules.bat` para lanzar `calificaciones_aules.py` |
-| `empaquetar_appimage.sh`    | Script python para empaquetar el script `calificaciones_aules.py` en un AppImage en sistemas GNU/Linux. Requiere `build.sh`. |
-| `empaquetar_mac.sh`    | Script python para empaquetar el script `calificaciones_aules.py` en un AppImage en sistemas macOS.|
-| `build.sh`                  | Script python para generrar el AppImage. Usado por `empaquetar_appimage.sh` |
-| `empaquetar_windows.bat`    | Archivo de proceso por lotes para empaquetar el script `calificaciones_aules.py` en un ejecutable (EXE) en sistemas Windows. |
-| `gestor-calificaciones.ico` | Logo de la aplicación para Windows.                          |
-| `gestor-calificaciones.png` | Logo de la aplicación para GNU/Linux.                        |
+Es una herramienta unificada con menú interactivo diseñada para docentes que necesitan gestionar estructuras complejas de calificación en la plataforma **Aules**. Olvídate de crear manualmente decenas de categorías y criterios de evaluación.
 
-## Releases
+### ✨ Características Principales
+- 🎨 **Nueva Interfaz Visual**: Aplicación moderna integrada (GUI) para una gestión sin comandos.
+- 🛠️ **Gestión Integral**: Crea, actualiza fórmulas/pesos y elimina estructuras completas en segundos.
+- 📝 **Configuración JSON**: Define toda tu programación en un simple archivo `datos_aules.json`.
+- 🤖 **IA Friendly**: Incluye prompts optimizados para que ChatGPT/Claude generen tu configuración a partir de tu programación docente.
+- 💻 **Multiplataforma**: Binarios listos para Windows, Linux (AppImage) y macOS (Apple Silicon/Intel).
 
-En el apartado releases hay disponibles dos assets:
+> [!NOTE]
+> Para detalles técnicos, estructura de archivos y opciones avanzadas, consulta la [**Guía Técnica para Desarrolladores**](file:///media/DADES/OneDriveGVA/DOCENCIA/25-26/AULES/GestionCalificacionesAules/README_TECNICO.md).
 
-| Asset                                            | Descripción                                                  |
-| ------------------------------------------------ | ------------------------------------------------------------ |
-| `Gestor_Calificaciones_Aules.exe`                | Binario ejecutable para sistemas Windows.                    |
-| `Gestor_de_Calificaciones_Aules-x86_64.AppImage` | Binario ejecutable para sistemas GNU/Linux, ejecutar con `./Gestor_de_Calificaciones_Aules-x86_64.AppImage` desde la consola |
+---
 
-# Ayuda
+## 📥 Descargas (Releases)
 
-## DESCRIPCIÓN:
-Script unificado con menú interactivo para gestionar estructuras de calificación en Moodle/Aules.
-Permite crear, actualizar fórmulas y pesos, eliminar estructuras completas y generar plantillas de configuración.
+| Asset | Sistema Operativo | Descripción |
+| :--- | :--- | :--- |
+| 🪟 `Gestor_Calificaciones_Aules.exe` | **Windows** | Ejecutable directo para Windows 10/11. |
+| 🐧 `Gestor_de_Calificaciones_Aules.AppImage` | **GNU/Linux** | Formato universal. Ejecutar con `chmod +x` y `./fichero`. |
+| 🍎 `AulesGradeManager.dmg` | **macOS** | Instalador para sistemas Mac (ver guía de seguridad abajo). |
 
-## CARACTERÍSTICAS PRINCIPALES:
-- Menú interactivo con 5 opciones principales
-- Gestión completa de categorías y elementos de calificación
-- Soporte para fórmulas de cálculo personalizadas y pesos de los elementos en sus categorias.
-- Configuración mediante archivo JSON (`datos_aules.json`)
-- Detección automática del entorno de ejecución (AppImage vs desarrollo)
+---
 
-## OPCIONES DEL MENÚ:
-0. Generar estructura básica JSON local
-   - Guía interactiva para crear `datos_aules_generado.json`
-   - Incluye sugerencias para IA generativa
+## ⚙️ Configuración (`datos_aules.json`)
 
-1. Crear nueva estructura online
-   - Crea estructura completa basada en `datos_aules.json`
+La aplicación busca este archivo en la misma carpeta donde se encuentra instalada.
 
-2. Actualizar cálculos y pesos
-   - Modifica fórmulas, pesos y configuraciones en estructura existente
-
-3. Eliminar estructura online
-   - Elimina completamente una estructura por categoría padre
-
-4. Salir
-   - Finaliza la ejecución
-
-## ESTRUCTURA DEL ARCHIVO JSON (datos_aules.json):
 ```json
 {
   "base_url": "https://aules.edu.gva.es/docent",
-  "username": "tu_usuario",
+  "username": "12345678H",
   "password": "tu_contraseña",
-  "course_id": 12345,
+  "course_id": 112233,
   "configuracion_global": {
     "aggregation": 10,
     "aggregateonlygraded": false,
     "grademax": 10,
-    "gradepass": 5
+    "gradepass": 5,
+    "ce_as_category": false
   },
-  "categoria_padre": "Nombre categoría padre",
+  "categoria_padre": "Nombre categoría principal",
+
   "categorias_hijas": [
     {
-      "nombre": "Nombre RA1",
+      "nombre": "RA1: Resultado de Aprendizaje 1",
       "aggregationcoef": 2,
       "elementos": [
-        "Elemento simple",
+        "CE 1.1 Examen Teórico",
         {
-          "nombre": "Elemento con configuración",
+          "nombre": "CE 1.2 Práctica Final",
           "aggregationcoef": 2,
-          "formula": "=[[1AVA]]",
-          "idnumber": "ID_UNICO_001"
+          "formula": "=[[EXAM]]*0.4+[[PRAC]]*0.6",
+          "idnumber": "ID_CE12"
         }
       ]
     }
@@ -94,44 +78,45 @@ Permite crear, actualizar fórmulas y pesos, eliminar estructuras completas y ge
 }
 ```
 
-## URLs BASE SOPORTADAS:
-- https://aules.edu.gva.es/docent (entorno de pruebas)
-- https://aules.edu.gva.es/fp (FP Presencial)
-- https://aules.edu.gva.es/semipresencial (FP Semipresencial)
+> [!TIP]
+> **Opciones de Agregación más comunes**: 
+> - `0`: Media aritmética.
+> - `10`: Media ponderada.
+> - `13`: Natural (Suma).
 
-## OPCIONES DE AGREGACIÓN:
--  0: Media de las calificaciones
-- 10: Media ponderada de las calificaciones
-- 11: Media ponderada simple de las calificaciones
-- 12: Media de las calificaciones (con créditos extra)
--  2: Mediana de las calificaciones
--  4: Calificación más baja
--  6: Calificación más alta
--  8: Moda de las calificaciones
-- 13: Natural
+---
 
-## NOTAS IMPORTANTES:
-- Opciones 1, 2 y 3 requieren datos_aules.json
-- `aggregationcoef` es opcional (0.0 categorías, 1.0 items por defecto)
-- Fórmulas usan sintaxis Moodle: =[[NOMBRE_ITEM]]
-- `idnumber` identifica elementos únicamente
-- Se recomienda ejecutar como AppImage para mejor portabilidad
+## 🌐 Información de Referencia
 
-## FLUJO DE TRABAJO RECOMENDADO:
-1. Ejecutar opción 0 para generar plantilla básica
-2. Editar manualmente el JSON generado
-3. Usar IA generativa (ChatGPT, Claude, etc.) para completar RA y CE
-4. Renombrar archivo a `datos_aules.json`
-5. Ejecutar opción 1 para crear estructura online
+### 🔗 URLs Base Soportadas
+- **Entorno de Pruebas**: `https://aules.edu.gva.es/docent`
+- **FP Presencial**: `https://aules.edu.gva.es/fp`
+- **FP Semipresencial**: `https://aules.edu.gva.es/semipresencial`
 
-## SOPORTE PARA IA GENERATIVA:
-Incluye prompt específico para crear JSON completos a partir de documentos con RA y CE.
+### 📊 Opciones de Agregación
+| Código | Tipo de Agregación | Descripción |
+| :--- | :--- | :--- |
+| **0** | Media | Media de todas las calificaciones. |
+| **10** | Media ponderada | Media basada en pesos (`aggregationcoef`). |
+| **13** | Natural | Suma de puntos de todos los elementos. |
+| **2** | Mediana | Valor central de las calificaciones. |
+| **11** | Media ponderada simple | Media ponderada automática. |
 
-# Ejemplo de ejecución
+> [!TIP]
+> Para ver el listado técnico completo de agregaciones, consulta el [README_TECNICO.md](file:///media/DADES/OneDriveGVA/DOCENCIA/25-26/AULES/GestionCalificacionesAules/README_TECNICO.md).
 
-Aquí puedes ver un ejemplo de ejecución para la opción 0 (Generar estructura básica):
+---
 
-```sh
+## 🛠️ Modo de Empleo
+
+### 🔄 Flujo de Trabajo Recomendado
+1. **Paso 0**: Generar la plantilla inicial con la **Opción 0** del menú.
+2. **Paso 1**: Editar `datos_aules_generado.json` (puedes usar el prompt de IA de abajo).
+3. **Paso 2**: Renombrar el archivo final a `datos_aules.json`.
+4. **Paso 3**: Ejecutar la **Opción 1** para subir la estructura a Aules.
+
+### 💻 Ejemplo de Ejecución (Opción 0)
+```text
 ==================================================
 GENERADOR DE ESTRUCTURA BÁSICA JSON
 ==================================================
@@ -177,7 +162,9 @@ RECOMENDACIÓN: Edita manualmente el archivo para:
    Los identificadores que uses en las formulas deben existir previamente, sino la formula no se aplicara
 3. Añadir idnumber (Solo CE) para identificar elementos de forma única
 4. Añadir aggregationcoef (Solo Categorias hijas (RA) y CE) para indicar el peso del elemento en la ponderacion
-5. Añadir más categorías hijas y elementos si es necesario
+5. Añadir `ce_as_category: true` si prefieres que los Criterios de Evaluación se creen como categorías en lugar de ítems simples.
+6. Añadir más categorías hijas y elementos si es necesario
+
 
   EJEMPLOS:
   - "formula": "=[[1AVA]]"
@@ -262,3 +249,33 @@ Y este es el json creado: `datos_aules_generado.json`:
 
 [<img align="left" height="18px" alt="martinezpenya | Sponsor" src="https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86" />](https://github.com/sponsors/martinezpenya)
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/martinezpenya)
+
+---
+
+## 🎨 Nueva Interfaz Gráfica (GUI)
+
+La versión actual incluye una interfaz moderna basada en **CustomTkinter** que permite gestionar todo de forma visual:
+
+1. **Dashboard de Inicio**: Estado de conexión y acciones rápidas.
+2. **Ajustes Avanzados**: Configura tu usuario, contraseña, entorno y la nueva opción de **CE como categorías**.
+3. **Editor JSON**: Vista previa de tu configuración.
+4. **Consola en vivo**: Sigue el progreso de las operaciones en tiempo real.
+
+
+Para ejecutar la versión visual, simplemente abre el ejecutable (`.exe`, `.AppImage` o `.dmg`) descargado de las Release.
+
+---
+
+## 🛠️ Desarrollo y Ejecución Local
+
+Si prefieres ejecutar el código fuente:
+
+```bash
+git clone https://github.com/martinezpenya/GestionCalificacionesAules.git
+cd GestionCalificacionesAules
+pip install -r requirements.txt
+# Para la versión visual:
+python gui_aules.py
+# Para la versión de terminal:
+python calificaciones_aules.py
+```

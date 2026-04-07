@@ -32,10 +32,10 @@ jobs:
         # Check for icon
         if (Test-Path "gestor-calificaciones.ico") {
           Write-Host "Icon found: gestor-calificaciones.ico"
-          pyinstaller --onefile --console --name "Gestor_Calificaciones_Aules" --icon "gestor-calificaciones.ico" --hidden-import=bs4 --hidden-import=tqdm --hidden-import=requests --hidden-import=urllib.parse --hidden-import=json --hidden-import=re --hidden-import=time --hidden-import=os --hidden-import=sys --hidden-import=argparse --hidden-import=pydoc calificaciones_aules.py
+          pyinstaller --onefile --noconsole --name "Gestor_Calificaciones_Aules" --icon "gestor-calificaciones.ico" --hidden-import=bs4 --hidden-import=tqdm --hidden-import=requests --hidden-import=flet --hidden-import=urllib.parse --hidden-import=json --hidden-import=re --hidden-import=time --hidden-import=os --hidden-import=sys --hidden-import=argparse --hidden-import=pydoc --hidden-import=threading gui_aules.py
         } else {
           Write-Host "No icon found, building without icon"
-          pyinstaller --onefile --console --name "Gestor_Calificaciones_Aules" --hidden-import=bs4 --hidden-import=tqdm --hidden-import=requests --hidden-import=urllib.parse --hidden-import=json --hidden-import=re --hidden-import=time --hidden-import=os --hidden-import=sys --hidden-import=argparse --hidden-import=pydoc calificaciones_aules.py
+          pyinstaller --onefile --noconsole --name "Gestor_Calificaciones_Aules" --hidden-import=bs4 --hidden-import=tqdm --hidden-import=requests --hidden-import=flet --hidden-import=urllib.parse --hidden-import=json --hidden-import=re --hidden-import=time --hidden-import=os --hidden-import=sys --hidden-import=argparse --hidden-import=pydoc --hidden-import=threading gui_aules.py
         }
         
         Write-Host "Build completed"

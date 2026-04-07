@@ -48,7 +48,7 @@ jobs:
         PYI_ARGS=(
           --name "GestorCalificacionesAules"
           --onedir
-          --console
+          --noconsole
           --add-data "gestor-calificaciones.png:."
         )
         
@@ -61,6 +61,7 @@ jobs:
           --hidden-import=bs4 \
           --hidden-import=tqdm \
           --hidden-import=requests \
+          --hidden-import=flet \
           --hidden-import=urllib.parse \
           --hidden-import=json \
           --hidden-import=re \
@@ -69,7 +70,8 @@ jobs:
           --hidden-import=sys \
           --hidden-import=argparse \
           --hidden-import=pydoc \
-          calificaciones_aules.py
+          --hidden-import=threading \
+          gui_aules.py
         
         echo "Checking build results..."
         ls -la dist/
@@ -104,7 +106,7 @@ jobs:
         Exec=GestorCalificacionesAules
         Icon=GestorCalificacionesAules
         Categories=Education;Office;
-        Terminal=true
+        Terminal=false
         StartupNotify=true
         EOF
         

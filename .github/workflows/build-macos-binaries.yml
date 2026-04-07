@@ -54,16 +54,17 @@ jobs:
           echo "No icon source found, proceeding without custom icon"
         fi
 
-    - name: Build onefile binary with PyInstaller
+    - name: Build onefile macOS binary with PyInstaller
       run: |
-        echo "Building onefile macOS binary with PyInstaller..."
+        echo "Building onefile macOS binary with PyInstaller (GUI mode)..."
         PYI_ARGS=(
           --onefile
-          --console
+          --noconsole
           --name "GestorCalificacionesAules"
           --hidden-import=bs4 \
           --hidden-import=tqdm \
           --hidden-import=requests \
+          --hidden-import=flet \
           --hidden-import=urllib.parse \
           --hidden-import=json \
           --hidden-import=re \
@@ -71,7 +72,8 @@ jobs:
           --hidden-import=os \
           --hidden-import=sys \
           --hidden-import=argparse \
-          --hidden-import=pydoc
+          --hidden-import=pydoc \
+          --hidden-import=threading
         )
 
         # Optional resources
@@ -86,14 +88,14 @@ jobs:
         fi
 
         echo "PyInstaller args: ${PYI_ARGS[*]}"
-        pyinstaller "${PYI_ARGS[@]}" calificaciones_aules.py
+        pyinstaller "${PYI_ARGS[@]}" gui_aules.py
 
         echo "Checking build output..."
         ls -la dist/
         if [ -f "dist/GestorCalificacionesAules" ]; then
-          echo "✓ Binary created"
+          echo "✓ GUI Binary created"
         else
-          echo "✗ Binary not found"
+          echo "✗ GUI Binary not found"
           exit 1
         fi
 
@@ -105,16 +107,35 @@ jobs:
         dist/GestorCalificacionesAules /? 2>/dev/null || \
         echo "Binary present (may require runtime data to fully run)."
 
+    - name: Ad-hoc codesign binary
+      run: |
+        echo "Applying ad-hoc signature to the binary..."
+        codesign --force --deep --sign - "dist/GestorCalificacionesAules"
+        codesign -dvv "dist/GestorCalificacionesAules"
+
+    - name: Create DMG package
+      run: |
+        echo "Creating DMG for ${{ matrix.arch }}..."
+        mkdir -p dmg_root
+        cp "dist/GestorCalificacionesAules" "dmg_root/"
+        
+        # Opcional: añadir README básico al DMG
+        echo "Gestor automatizado del cuaderno de calificación de Aules para macOS (${{ matrix.arch }})" > dmg_root/README.txt
+        echo "Ejecuta la aplicación GestorCalificacionesAules de forma visual." >> dmg_root/README.txt
+        
+        hdiutil create -volname "GestorCuadernoAules-${{ matrix.arch }}" -srcfolder dmg_root -ov -format UDZO "GestorCuadernoAules-${{ matrix.arch }}.dmg"
+        ls -la *.dmg
+
     - name: Rename artifact with arch suffix
       run: |
         ARCH='${{ matrix.arch }}'
         cp dist/GestorCalificacionesAules "GestorCalificacionesAules-macos-${ARCH}"
         chmod +x "GestorCalificacionesAules-macos-${ARCH}"
-        ls -la "GestorCalificacionesAules-macos-${ARCH}"
 
-    - name: Upload binary artifact
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: macos-binary-${{ matrix.arch }}
+        name: macos-outputs-${{ matrix.arch }}
         path: |
           GestorCalificacionesAules-macos-${{ matrix.arch }}
+          GestorCuadernoAules-${{ matrix.arch }}.dmg
