@@ -97,4 +97,41 @@ Si deseas que una IA genere el JSON completo a partir de un PDF de tu programaci
 Para usuarios que necesiten depurar o firmar manualmente el binario:
 *   El binario se construye con `PyInstaller` usando el modo `--onefile`.
 *   La firma ad-hoc se puede verificar con: `codesign -dvv Gestor_Calificaciones_Aules`.
-*   El paquete `.dmg` se genera mediante `hdiutil` con el formato `UDZO`.
+## 🚀 Proceso de Actualización y Lanzamiento (CI/CD)
+
+El repositorio está configurado con **GitHub Actions** para generar automáticamente los ejecutables multiplataforma (.AppImage, .exe, .dmg) cada vez que se publica una nueva versión.
+
+Para realizar un lanzamiento oficial, sigue estos pasos:
+
+### 1. Incrementar la Versión
+Edita el archivo `gui_aules.py` y actualiza la constante de versión:
+```python
+# Versión de la Aplicación
+__version__ = "X.Y.Z"
+```
+
+### 2. Confirmar los Cambios (Git Commit)
+Añade tus cambios y realiza un commit descriptivo:
+```bash
+git add .
+git commit -m "feat: Descripción del cambio y subida a vX.Y.Z"
+git push origin main
+```
+
+### 3. Crear y Subir el Tag (Disparador de Release)
+El flujo de trabajo se activa únicamente cuando se sube una etiqueta (tag) que empieza por `v`:
+```bash
+# Crear la etiqueta localmente
+git tag -a vX.Y.Z -m "Versión vX.Y.Z"
+
+# Subir la etiqueta a GitHub
+git push origin vX.Y.Z
+```
+
+### 4. Recoger los Ejecutables
+Una vez subido el Tag, entra en la pestaña **"Actions"** de tu repositorio en GitHub. Verás un proceso llamado "Build and Release". Al terminar (aprox. 5 min), los ejecutables aparecerán automáticamente en la sección **"Releases"** del repositorio.
+
+---
+
+> [!IMPORTANT]
+> **Seguridad de Credenciales**: El archivo `datos_aules.json` está excluido en el `.gitignore`. Nunca lo fuerces al repositorio para evitar exponer tus contraseñas en el historial de Git.
