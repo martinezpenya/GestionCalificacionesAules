@@ -107,6 +107,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
       - name: Prepare Release Files
         run: |
           mkdir release_assets
@@ -127,7 +130,7 @@ jobs:
           | :--- | :--- | :--- |
           | **Windows** | `.exe` | Haz doble clic para iniciar la interfaz gráfica. |
           | **Linux** | `.AppImage` | Dale permisos de ejecución (`chmod +x`) y ejecútalo. |
-          | **macOS** | `.dmg` | Abre el disco, haz **Botón Derecho > Abrir** sobre la App para saltar el aviso de Gatekeeper. |
+          | **macOS** | `.dmg` | Abre el disco y haz **Botón Derecho > Abrir**. Si se bloquea, ve a **Ajustes del Sistema > Privacidad y seguridad** y pulsa en **"Abrir igualmente"**. |
 
           ## 📚 Documentación
           - [Guía de Usuario (README.md)](https://github.com/${{ github.repository }}/blob/main/README.md)
