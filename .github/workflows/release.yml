@@ -91,8 +91,8 @@ jobs:
           if [ -f "dist/${{ matrix.exec_name }}" ]; then
             mv "dist/${{ matrix.exec_name }}" .
           fi
-          # Generar el hash del archivo que ahora está en la raíz
-          sha256sum "${{ matrix.exec_name }}" > "${{ matrix.exec_name }}.sha256"
+          # Generar el hash del archivo que ahora está en la raíz (limpiando el asterisco de Windows)
+          sha256sum "${{ matrix.exec_name }}" | sed 's/\*//' > "${{ matrix.exec_name }}.sha256"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -119,7 +119,7 @@ jobs:
           find . -name "*.sha256" -exec cp {} release_assets/ \;
           
           # Crear el cuerpo de la Release de forma robusta
-          echo "# 🚀 Gestión de Calificaciones Aules v${{ github.ref_name }}" > release_assets/body.md
+          echo "# 🚀 Gestión de Calificaciones Aules ${{ github.ref_name }}" > release_assets/body.md
           echo "" >> release_assets/body.md
           echo "Herramienta multiplataforma profesional para la sincronización inteligente y gestión del libro de calificaciones en Aules (Moodle)." >> release_assets/body.md
           echo "" >> release_assets/body.md

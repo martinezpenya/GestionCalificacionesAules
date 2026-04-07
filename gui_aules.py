@@ -8,7 +8,7 @@ import os
 from calificaciones_aules import AulesClient, insertar_categorias_y_items, eliminar_estructura, actualizar_formulas, cargar_datos_json, sincronizar_todo, guardar_datos_json
 
 # Versión de la Aplicación (Control de cambios)
-__version__ = "1.7.2"
+__version__ = "1.7.4"
 
 # Configuración de apariencia
 ctk.set_appearance_mode("Dark")
@@ -243,15 +243,36 @@ class App(ctk.CTk):
         # 1. Guardar cambios físicamente en el JSON antes de conectar
         try:
             data = cargar_datos_json()
-            if data:
+            if not data:
+                # Primer arranque: Crear estructura básica por defecto
+                data = {
+                    "base_url": url,
+                    "username": user,
+                    "password": pwd,
+                    "course_id": 0,
+                    "configuracion_global": {
+                        "aggregation": 10,
+                        "aggregateonlygraded": False,
+                        "grademax": 10,
+                        "gradepass": 5,
+                        "ce_as_category": ce_as_cat
+                    },
+                    "categoria_padre": "Nueva Categoría",
+                    "categorias_hijas": []
+                }
+            else:
+                # Actualizar datos existentes
                 data["username"] = user
                 data["password"] = pwd
                 data["base_url"] = url
                 if "configuracion_global" not in data: data["configuracion_global"] = {}
                 data["configuracion_global"]["ce_as_category"] = ce_as_cat
-                guardar_datos_json(data)
-                # Refrescar la vista previa del JSON si estamos en esa pestaña
-                self.load_json_data()
+            
+            # Guardar físicamente
+            guardar_datos_json(data)
+            
+            # Refrescar la vista previa del JSON si existe el método (corregido a reload_all_data_event)
+            self.reload_all_data_event()
         except Exception as e:
             self.log(f"Error al guardar ajustes: {e}", "error")
 

@@ -109,9 +109,10 @@ import argparse
 import sys
 import pydoc
 import getpass
+import platform
 
 # --- CONSTANTES ---
-VERSION = "1.7.2"
+VERSION = "1.7.4"
 FECHA = "07/04/2026"
 
 # --- UTILIDADES ---
@@ -458,10 +459,10 @@ def get_json_path():
         return os.path.join(os.getcwd(), 'datos_aules.json')
 
 def get_json_path():
-    """Determina la ruta del archivo datos_aules.json priorizando local y luego Documentos."""
+    """Determina la ruta del archivo datos_aules.json con prioridad local y fallback robusto."""
     nombre_archivo = "datos_aules.json"
     
-    # 1. Prioridad: Directorio actual de ejecución o del binario (Modo Portable)
+    # 1. PRIORIDAD ABSOLUTA: Directorio local (Portable / AppImage)
     if 'APPIMAGE' in os.environ:
         base_dir = os.path.dirname(os.environ.get('APPIMAGE'))
     elif getattr(sys, 'frozen', False):
@@ -473,14 +474,33 @@ def get_json_path():
     if os.path.exists(local_path):
         return local_path
 
-    # 2. Alternativa: Carpeta de Documentos del usuario (Modo Instalado)
+    # 2. FALLBACK 1: Carpeta estándar de configuración (Linux/macOS)
     try:
-        user_docs = os.path.join(os.path.expanduser("~"), "Documents", "GestionCalificacionesAules")
-        if not os.path.exists(user_docs):
-            os.makedirs(user_docs, exist_ok=True)
-        return os.path.join(user_docs, nombre_archivo)
+        if platform.system() != "Windows":
+            config_dir = os.path.join(os.path.expanduser("~"), ".config", "GestionCalificacionesAules")
+            if not os.path.exists(config_dir):
+                os.makedirs(config_dir, exist_ok=True)
+            config_path = os.path.join(config_dir, nombre_archivo)
+            if os.path.exists(config_path):
+                return config_path
     except:
-        return local_path # Fallback final
+        pass
+
+    # 3. FALLBACK 2: Carpeta de Documentos (Windows/macOS)
+    try:
+        # Intentar encontrar la carpeta de documentos en varios idiomas
+        home = os.path.expanduser("~")
+        for folder_name in ["Documents", "Documentos", "Documents"]:
+            docs_dir = os.path.join(home, folder_name, "GestionCalificacionesAules")
+            if os.path.exists(docs_dir):
+                return os.path.join(docs_dir, nombre_archivo)
+        
+        # Si no existe ninguna, crear en Documents (por defecto)
+        default_docs = os.path.join(home, "Documents", "GestionCalificacionesAules")
+        os.makedirs(default_docs, exist_ok=True)
+        return os.path.join(default_docs, nombre_archivo)
+    except:
+        return local_path
 
 def cargar_datos_json():
     """Carga los datos del archivo JSON en la ruta inteligente."""
